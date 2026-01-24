@@ -117,7 +117,6 @@ export default function WriterPage() {
 
   return (
     <>
-      <DashboardHeader title={t("writer.title")} />
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-6 lg:grid-cols-[1fr_400px]">

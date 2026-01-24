@@ -79,7 +79,7 @@ export function AppSidebar() {
           <div className="relative h-[56px] w-auto">
             <Image
               src="/Heroic_AI.png"
-              alt="Heroic AI Studio Logo"
+              alt="HINTech Studio Logo"
               width={220}
               height={88}
               priority

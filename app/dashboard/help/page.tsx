@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     question: "Can I use the generated content commercially?",
-    answer: "Yes! All content generated through Heroic AI Studio is yours to use commercially. There are no restrictions on how you use the content you create with our tools."
+    answer: "Yes! All content generated through HINTech Studio is yours to use commercially. There are no restrictions on how you use the content you create with our tools."
   },
   {
     question: "What's the difference between Free and Pro plans?",

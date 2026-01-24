@@ -21,11 +21,11 @@ const geistMono = Geist_Mono({
 
 /* ================= METADATA ================= */
 export const metadata: Metadata = {
-  title: "Heroic AI Studio - All-in-One AI Content, Design & Utility Platform",
+  title: "HINTech Studio - All-in-One AI Content, Design & Utility Platform",
   description:
-    "Create content at the speed of thought. Heroic AI Studio combines AI writing, design tools, and utilities in one powerful platform.",
-  applicationName: "Heroic AI Studio",
-  authors: [{ name: "Heroic AI", url: "https://heroic.web.id" }],
+    "Create content at the speed of thought. HINTech Studio combines AI writing, design tools, and utilities in one powerful platform.",
+  applicationName: "HINTech Studio",
+  authors: [{ name: "HINTech", url: "https://heroic.web.id" }],
   creator: "Rodhi Faisal Mufid",
   keywords: [
     "AI",

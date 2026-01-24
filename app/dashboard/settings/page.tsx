@@ -98,7 +98,6 @@ function SettingsContent() {
 
   return (
     <>
-      <DashboardHeader title={t("common.settings")} />
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-4xl">
           <Tabs defaultValue={defaultTab}>

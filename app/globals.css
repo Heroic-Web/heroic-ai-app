@@ -2,37 +2,44 @@
 @import "tw-animate-css";
 
 /* ======================================================
-   HEROIC AI STUDIO — THEME TOKENS (SAFE & SOLID)
+   HINTech AI Studio — DESIGN TOKENS (SOLID & SAFE)
    ====================================================== */
 :root {
+  /* Base */
   --background: 0 0% 98%;
   --foreground: 222.2 47.4% 11.2%;
 
+  /* Surfaces */
   --card: 0 0% 100%;
   --card-foreground: 222.2 47.4% 11.2%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 47.4% 11.2%;
 
+  /* Primary */
   --primary: 222.2 47.4% 11.2%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 210 40% 96.1%;
+  /* Secondary */
+  --secondary: 210 40% 96%;
   --secondary-foreground: 222.2 47.4% 11.2%;
 
-  --muted: 210 40% 96.1%;
+  /* Muted */
+  --muted: 210 40% 96%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
+  /* Accent / Brand */
   --accent: 220 90% 56%;
   --accent-foreground: 0 0% 100%;
 
+  /* States */
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 100%;
 
+  /* UI */
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 220 90% 56%;
-
   --radius: 0.75rem;
 
   /* Brand */
@@ -41,7 +48,7 @@
 }
 
 /* ======================================================
-   DARK MODE — SOLID & STABLE
+   DARK MODE — NO TRANSPARENCY
    ====================================================== */
 .dark {
   --background: 222.2 47.4% 11.2%;
@@ -60,7 +67,7 @@
   --secondary-foreground: 0 0% 98%;
 
   --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted-foreground: 215 20.2% 65%;
 
   --accent: 220 90% 56%;
   --accent-foreground: 0 0% 100%;
@@ -71,36 +78,39 @@
 }
 
 /* ======================================================
-   BASE BODY — SOLID BACKGROUND (ANTI TRANSPARENT)
+   BASE — HARD ANTI TRANSPARENT
    ====================================================== */
 html,
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  min-height: 100%;
 }
 
 body {
+  font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* ======================================================
-   OPTIONAL LIGHT GRADIENT (AMAN, TIDAK TEMBUS NAVBAR)
+   SAFE BACKGROUND GRADIENT (LIGHT MODE ONLY)
    ====================================================== */
 html:not(.dark) body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
+  pointer-events: none;
 
   background-image:
     radial-gradient(
-      1200px 600px at 10% -10%,
+      1000px 500px at 10% -10%,
       hsla(var(--heroic-blue) / 0.08),
       transparent 60%
     ),
     radial-gradient(
-      1000px 500px at 90% 10%,
+      900px 500px at 90% 10%,
       hsla(var(--heroic-blue) / 0.06),
       transparent 60%
     ),
@@ -109,38 +119,64 @@ html:not(.dark) body::before {
       hsl(0 0% 100%),
       hsl(210 40% 98%)
     );
-
-  background-size: 200% 200%;
-  animation: heroic-gradient 18s ease-in-out infinite;
 }
 
 /* ======================================================
-   GRADIENT MOTION
-   ====================================================== */
-@keyframes heroic-gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-/* ======================================================
-   HARD GUARD — NAVBAR / HEADER / POPOVER TIDAK TRANSPARAN
+   HARD GUARD — NO TRANSPARENT UI
    ====================================================== */
 header,
 nav,
+aside,
+footer,
+[data-header],
 [data-navbar],
-[data-header] {
+[data-sidebar],
+[data-popover],
+[data-dropdown],
+[data-select-content],
+[data-radix-popper-content-wrapper] {
   background-color: hsl(var(--background));
 }
 
 /* ======================================================
-   BASE STYLES
+   RADIX / SHADCN FIXES (CRITICAL)
+   ====================================================== */
+[data-radix-select-content],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content] {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+
+/* ======================================================
+   FORM ELEMENTS — ALWAYS SOLID
+   ====================================================== */
+input,
+textarea,
+select {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* ======================================================
+   SCROLLBAR (OPTIONAL, CLEAN)
+   ====================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ======================================================
+   TAILWIND BASE LAYER
    ====================================================== */
 @layer base {
   *,

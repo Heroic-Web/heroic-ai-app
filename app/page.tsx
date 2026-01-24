@@ -14,6 +14,7 @@ export default function LandingPage() {
     
       <main>
         <Hero />
+        <Navbar />
         <Features />
         <ToolsPreview />
         <Pricing />

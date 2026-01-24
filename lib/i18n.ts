@@ -20,7 +20,7 @@ export const translations = {
       badge: "All-in-One AI Platform",
       title: "Create content at the speed of thought",
       subtitle:
-        "Heroic AI Studio combines AI writing, design tools, and utilities in one powerful platform. Write better, design faster, work smarter.",
+        "HINTech AI Studio combines AI writing, design tools, and utilities in one powerful platform. Write better, design faster, work smarter.",
       cta: "Start Creating Free",
       ctaSecondary: "Watch Demo",
       trustedBy: "Trusted by 10,000+ creators and businesses",
@@ -102,7 +102,7 @@ export const translations = {
         name: "Free",
         price: "$0",
         period: "/month",
-        description: "Perfect for trying out Heroic AI",
+        description: "Perfect for trying out HINTech",
         features: [
           "5 AI generations per day",
           "Basic tools access",
@@ -147,7 +147,7 @@ export const translations = {
     cta: {
       title: "Ready to create heroic content?",
       subtitle:
-        "Join thousands of creators and businesses using Heroic AI Studio.",
+        "Join thousands of creators and businesses using HINTech Studio.",
       button: "Start Creating Free",
     },
     // Footer
@@ -275,7 +275,7 @@ export const translations = {
       badge: "Platform AI All-in-One",
       title: "Buat konten dengan kecepatan pikiran",
       subtitle:
-        "Heroic AI Studio menggabungkan AI writing, design tools, dan utilitas dalam satu platform. Tulis lebih baik, desain lebih cepat, kerja lebih cerdas.",
+        "HINTech Studio menggabungkan AI writing, design tools, dan utilitas dalam satu platform. Tulis lebih baik, desain lebih cepat, kerja lebih cerdas.",
       cta: "Mulai Gratis",
       ctaSecondary: "Lihat Demo",
       trustedBy: "Dipercaya oleh 10.000+ kreator dan bisnis",
@@ -357,7 +357,7 @@ export const translations = {
         name: "Gratis",
         price: "Rp0",
         period: "/bulan",
-        description: "Sempurna untuk mencoba Heroic AI",
+        description: "Sempurna untuk mencoba HINTech",
         features: [
           "5 AI generations per hari",
           "Akses tools dasar",
@@ -402,7 +402,7 @@ export const translations = {
     cta: {
       title: "Siap membuat konten heroik?",
       subtitle:
-        "Bergabung dengan ribuan kreator dan bisnis yang menggunakan Heroic AI Studio.",
+        "Bergabung dengan ribuan kreator dan bisnis yang menggunakan HINTech Studio.",
       button: "Mulai Gratis",
     },
     // Footer

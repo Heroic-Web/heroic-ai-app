@@ -22,7 +22,6 @@ export function ToolPageLayout({
 }: ToolPageLayoutProps) {
   return (
     <>
-      <DashboardHeader title={title} />
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-4xl">
           {/* Back Button */}
