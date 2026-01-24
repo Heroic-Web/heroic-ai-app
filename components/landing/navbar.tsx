@@ -3,7 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
-import { Menu, X } from "lucide-react"
+import {
+  Menu,
+  X,
+  Sparkles,
+  Wrench,
+  CreditCard,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language-context"
@@ -15,7 +21,14 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+    <header
+      className="
+        fixed top-0 left-0 right-0 z-50
+        bg-background text-foreground
+        border-b border-border
+        isolate
+      "
+    >
       {/* ================= DESKTOP NAV ================= */}
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         {/* LEFT */}
@@ -34,24 +47,29 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Nav links */}
+          {/* Nav links (Desktop) */}
           <div className="hidden md:flex items-center gap-6">
             <Link
               href="#features"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              <Sparkles className="h-4 w-4 text-heroic-blue" />
               {t("nav.features")}
             </Link>
+
             <Link
               href="#tools"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              <Wrench className="h-4 w-4 text-heroic-blue" />
               {t("nav.tools")}
             </Link>
+
             <Link
               href="#pricing"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              <CreditCard className="h-4 w-4 text-heroic-blue" />
               {t("nav.pricing")}
             </Link>
           </div>
@@ -88,31 +106,36 @@ export function Navbar() {
 
       {/* ================= MOBILE MENU ================= */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border/40 bg-background px-6 py-4">
+        <div className="md:hidden border-t border-border bg-background px-6 py-4">
           <div className="flex flex-col gap-4">
             <Link
               href="#features"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
+              <Sparkles className="h-4 w-4 text-heroic-blue" />
               {t("nav.features")}
             </Link>
+
             <Link
               href="#tools"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
+              <Wrench className="h-4 w-4 text-heroic-blue" />
               {t("nav.tools")}
             </Link>
+
             <Link
               href="#pricing"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
+              <CreditCard className="h-4 w-4 text-heroic-blue" />
               {t("nav.pricing")}
             </Link>
 
-            <div className="flex items-center gap-3 pt-4 border-t border-border/40">
+            <div className="flex items-center gap-3 pt-4 border-t border-border">
               <ThemeToggle />
               <LanguageSwitcher />
             </div>

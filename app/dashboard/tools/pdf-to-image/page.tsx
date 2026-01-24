@@ -95,7 +95,6 @@ export default function PdfToImagePage() {
     <ToolPageLayout
       title={t("tools.pdfToImage")}
       description="Convert PDF pages to high-quality images"
-      icon={<FileImage className="h-6 w-6" />}
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">

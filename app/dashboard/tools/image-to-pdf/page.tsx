@@ -99,7 +99,6 @@ export default function ImageToPdfPage() {
     <ToolPageLayout
       title={t("tools.imageToPdf")}
       description="Convert multiple images to a single PDF document"
-      icon={<FileText className="h-6 w-6" />}
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">

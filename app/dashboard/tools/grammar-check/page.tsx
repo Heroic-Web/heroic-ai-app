@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Copy, RotateCcw, CheckCircle, AlertTriangle, SpellCheck } from "lucide-react"
+import {
+  Copy,
+  RotateCcw,
+  CheckCircle,
+  AlertTriangle,
+  SpellCheck as SpellCheck, // ✅ FIX UTAMA
+} from "lucide-react"
 
 interface GrammarIssue {
   type: "grammar" | "spelling" | "style" | "punctuation"
@@ -26,17 +32,15 @@ export default function GrammarCheckPage() {
 
   const checkGrammar = async () => {
     if (!text.trim()) return
-    
+
     setIsChecking(true)
-    
+
     // Simulate grammar checking
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Simple demo grammar checking
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
     const foundIssues: GrammarIssue[] = []
     let corrected = text
-    
-    // Check for common issues
+
     const commonErrors: [RegExp, string, string, string, string][] = [
       [/\bi\b/g, "I", "i", "Capitalize 'I'", "grammar"],
       [/\bdont\b/gi, "don't", "dont", "Missing apostrophe", "punctuation"],
@@ -49,33 +53,41 @@ export default function GrammarCheckPage() {
       [/\bvery unique\b/gi, "unique", "very unique", "'Unique' doesn't need 'very'", "style"],
       [/\s{2,}/g, " ", "  ", "Extra spaces", "style"],
     ]
-    
+
     for (const [pattern, replacement, original, message, type] of commonErrors) {
       if (pattern.test(text)) {
         foundIssues.push({
           type: type as GrammarIssue["type"],
           original,
           suggestion: replacement,
-          message
+          message,
         })
         corrected = corrected.replace(pattern, replacement)
       }
     }
-    
-    // Check for sentences not starting with capital
+
     const sentences = text.split(/[.!?]+\s*/)
     for (const sentence of sentences) {
-      if (sentence && sentence[0] && sentence[0] !== sentence[0].toUpperCase() && /[a-z]/.test(sentence[0])) {
+      if (
+        sentence &&
+        sentence[0] &&
+        sentence[0] !== sentence[0].toUpperCase() &&
+        /[a-z]/.test(sentence[0])
+      ) {
         foundIssues.push({
           type: "grammar",
           original: sentence.substring(0, 20) + "...",
-          suggestion: sentence[0].toUpperCase() + sentence.substring(1, 20) + "...",
-          message: "Sentence should start with capital letter"
+          suggestion:
+            sentence[0].toUpperCase() + sentence.substring(1, 20) + "...",
+          message: "Sentence should start with capital letter",
         })
-        corrected = corrected.replace(sentence, sentence[0].toUpperCase() + sentence.substring(1))
+        corrected = corrected.replace(
+          sentence,
+          sentence[0].toUpperCase() + sentence.substring(1)
+        )
       }
     }
-    
+
     setIssues(foundIssues)
     setCorrectedText(corrected)
     setIsChecking(false)
@@ -101,19 +113,23 @@ export default function GrammarCheckPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "grammar": return "bg-red-500/20 text-red-400"
-      case "spelling": return "bg-orange-500/20 text-orange-400"
-      case "style": return "bg-blue-500/20 text-blue-400"
-      case "punctuation": return "bg-yellow-500/20 text-yellow-400"
-      default: return "bg-muted text-muted-foreground"
+      case "grammar":
+        return "bg-red-500/20 text-red-400"
+      case "spelling":
+        return "bg-orange-500/20 text-orange-400"
+      case "style":
+        return "bg-blue-500/20 text-blue-400"
+      case "punctuation":
+        return "bg-yellow-500/20 text-yellow-400"
+      default:
+        return "bg-muted text-muted-foreground"
     }
   }
 
   return (
     <ToolPageLayout
-      title={t("tools.grammarCheck")}
-      description="Check and fix grammar, spelling, and style issues"
-      icon={<SpellCheck className="h-6 w-6" />}
+    title={t("tools.grammarCheck")}
+    description="Check and fix grammar, spelling, and style issues"
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">

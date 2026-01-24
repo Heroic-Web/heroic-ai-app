@@ -16,18 +16,15 @@ export default function DashboardLayout({
     setMounted(true)
   }, [])
 
-  // ⛔ Hindari hydration mismatch
   if (!mounted) return null
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Sidebar (JANGAN ADA HEADER DI DALAM SINI) */}
         <AppSidebar />
 
         {/* Main area */}
         <SidebarInset className="flex flex-col bg-background">
-          {/* SATU-SATUNYA HEADER DASHBOARD */}
           <DashboardHeader />
 
           {/* Content */}

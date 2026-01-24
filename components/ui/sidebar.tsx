@@ -139,7 +139,7 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full',
+            'group/sidebar-wrapper flex min-h-svh w-full bg-background',
             className,
           )}
           {...props}
@@ -180,26 +180,32 @@ function Sidebar({
     )
   }
 
-  if (isMobile) {
+    if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
-          style={
-            {
-              '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
           side={side}
+          style={{ '--sidebar-width': SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+          className="
+            bg-background
+            text-foreground
+            w-(--sidebar-width)
+            p-0
+            border-r border-border
+            [&>button]:hidden
+          "
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
+
+          <div className="flex h-full w-full flex-col bg-background">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     )

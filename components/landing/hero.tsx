@@ -9,16 +9,47 @@ export function Hero() {
   const { t } = useLanguage()
 
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
-      {/* Background glow effect */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-heroic-blue/20 blur-[120px]" />
+    <section
+      className="
+        relative overflow-hidden
+        bg-background
+        pt-32 pb-20
+        md:pt-40 md:pb-32
+      "
+    >
+      {/* =================================================
+         NAVBAR SPACER (ANTI TEMBUS)
+         ================================================= */}
+      <div
+        aria-hidden
+        className="
+          absolute top-0 left-0 right-0
+          h-24 md:h-28
+          bg-background
+          z-10
+        "
+      />
+
+      {/* =================================================
+         BACKGROUND GLOW (DIPOTONG, AMAN)
+         ================================================= */}
+      <div className="pointer-events-none absolute inset-x-0 top-24 overflow-hidden">
+        <div
+          className="
+            absolute top-1/3 left-1/2
+            h-[600px] w-[600px]
+            -translate-x-1/2 -translate-y-1/2
+            rounded-full
+            bg-heroic-blue/20
+            blur-[120px]
+          "
+        />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative z-20 mx-auto max-w-7xl px-6">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/80 px-4 py-1.5 text-sm">
             <span className="h-2 w-2 rounded-full bg-heroic-blue animate-pulse" />
             <span className="text-muted-foreground">{t("hero.badge")}</span>
           </div>
@@ -41,12 +72,17 @@ export function Hero() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+
             <a
               href="https://wa.me/6282144137914?text=Halo%20saya%20tertarik%20dengan%20aplikasi%20Anda..."
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline" size="lg" className="gap-2 px-8 bg-transparent">
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 px-8 bg-background"
+              >
                 <Play className="h-4 w-4" />
                 {t("hero.ctaSecondary")}
               </Button>
@@ -54,15 +90,22 @@ export function Hero() {
           </div>
 
           {/* Trusted by */}
-          <p className="mt-12 text-sm text-muted-foreground">{t("hero.trustedBy")}</p>
+          <p className="mt-12 text-sm text-muted-foreground">
+            {t("hero.trustedBy")}
+          </p>
 
           {/* Logo cloud */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-8 opacity-50">
-            {["Acme Inc", "Globex", "Initech", "Umbrella", "Massive Dynamic"].map((company) => (
-              <div key={company} className="text-sm font-medium tracking-wider text-muted-foreground">
-                {company}
-              </div>
-            ))}
+            {["Acme Inc", "Globex", "Initech", "Umbrella", "Massive Dynamic"].map(
+              (company) => (
+                <div
+                  key={company}
+                  className="text-sm font-medium tracking-wider text-muted-foreground"
+                >
+                  {company}
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -75,8 +118,12 @@ export function Hero() {
             { value: "99.9%", label: t("stats.uptime") },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="text-3xl font-bold md:text-4xl">{stat.value}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+              <div className="text-3xl font-bold md:text-4xl">
+                {stat.value}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>

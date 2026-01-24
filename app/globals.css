@@ -2,8 +2,7 @@
 @import "tw-animate-css";
 
 /* ======================================================
-   HEROIC AI STUDIO — LIGHT THEME (DEFAULT)
-   White + gray + soft blue gradient
+   HEROIC AI STUDIO — THEME TOKENS (SAFE & SOLID)
    ====================================================== */
 :root {
   --background: 0 0% 98%;
@@ -42,7 +41,7 @@
 }
 
 /* ======================================================
-   DARK MODE — STABLE & CALM
+   DARK MODE — SOLID & STABLE
    ====================================================== */
 .dark {
   --background: 222.2 47.4% 11.2%;
@@ -72,16 +71,28 @@
 }
 
 /* ======================================================
-   ANIMATED LIGHT BACKGROUND (ONLY LIGHT MODE)
+   BASE BODY — SOLID BACKGROUND (ANTI TRANSPARENT)
    ====================================================== */
+html,
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html:not(.dark) body {
+/* ======================================================
+   OPTIONAL LIGHT GRADIENT (AMAN, TIDAK TEMBUS NAVBAR)
+   ====================================================== */
+html:not(.dark) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+
   background-image:
     radial-gradient(
       1200px 600px at 10% -10%,
@@ -119,7 +130,17 @@ html:not(.dark) body {
 }
 
 /* ======================================================
-   BASE STYLES — SAFE
+   HARD GUARD — NAVBAR / HEADER / POPOVER TIDAK TRANSPARAN
+   ====================================================== */
+header,
+nav,
+[data-navbar],
+[data-header] {
+  background-color: hsl(var(--background));
+}
+
+/* ======================================================
+   BASE STYLES
    ====================================================== */
 @layer base {
   *,

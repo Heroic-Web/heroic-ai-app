@@ -24,7 +24,9 @@ export const metadata: Metadata = {
   title: "Heroic AI Studio - All-in-One AI Content, Design & Utility Platform",
   description:
     "Create content at the speed of thought. Heroic AI Studio combines AI writing, design tools, and utilities in one powerful platform.",
-  generator: "v0.app",
+  applicationName: "Heroic AI Studio",
+  authors: [{ name: "Heroic AI", url: "https://heroic.web.id" }],
+  creator: "Rodhi Faisal Mufid",
   keywords: [
     "AI",
     "content creation",
@@ -35,20 +37,10 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/Heroic_AI.png", media: "(prefers-color-scheme: light)" },
+      { url: "/Heroic_AI.png", media: "(prefers-color-scheme: dark)" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/Heroic_AI.png",
   },
 }
 
@@ -60,26 +52,30 @@ export const viewport: Viewport = {
 }
 
 /* ================= ROOT LAYOUT ================= */
+/**
+ * ⚠️ RULE KERAS:
+ * - JANGAN render Navbar di sini
+ * - JANGAN render DashboardHeader di sini
+ * - Layout ini HARUS NETRAL
+ */
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geist.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
       >
-        {/* Theme (light / dark) */}
         <Providers>
-          {/* Auth context */}
           <AuthProvider>
-            {/* Language context */}
-            <LanguageProvider>{children}</LanguageProvider>
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
           </AuthProvider>
         </Providers>
 
-        {/* Vercel Analytics */}
         <Analytics />
       </body>
     </html>
