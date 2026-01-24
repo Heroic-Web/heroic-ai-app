@@ -25,6 +25,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
+import Image from "next/image"
 import {
   LayoutDashboard,
   FileText,
@@ -46,39 +47,15 @@ export function AppSidebar() {
   const { user, logout } = useAuth()
 
   const mainNavItems = [
-    {
-      title: t("nav.dashboard"),
-      url: "/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      title: t("writer.title"),
-      url: "/dashboard/writer",
-      icon: FileText,
-    },
-    {
-      title: t("tools.title"),
-      url: "/dashboard/tools",
-      icon: Wrench,
-    },
-    {
-      title: t("features.design.title"),
-      url: "/dashboard/design",
-      icon: Palette,
-    },
-    {
-      title: t("features.workflow.title"),
-      url: "/dashboard/workflow",
-      icon: Workflow,
-    },
+    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { title: t("writer.title"), url: "/dashboard/writer", icon: FileText },
+    { title: t("tools.title"), url: "/dashboard/tools", icon: Wrench },
+    { title: t("features.design.title"), url: "/dashboard/design", icon: Palette },
+    { title: t("features.workflow.title"), url: "/dashboard/workflow", icon: Workflow },
   ]
 
   const secondaryNavItems = [
-    {
-      title: t("common.settings"),
-      url: "/dashboard/settings",
-      icon: Settings,
-    },
+    { title: t("common.settings"), url: "/dashboard/settings", icon: Settings },
   ]
 
   const handleLogout = () => {
@@ -86,37 +63,42 @@ export function AppSidebar() {
     router.push("/")
   }
 
-  const userInitials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "U"
+  const userInitials =
+    user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U"
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground">
-            <span className="text-sm font-bold text-background">H</span>
+    <Sidebar collapsible="icon" className="bg-background">
+      {/* ===== Sidebar Header (SOLID) ===== */}
+      <SidebarHeader className="flex items-center justify-center border-b bg-background px-4 py-4">
+        <Link href="/" className="flex items-center justify-center">
+          <div className="relative h-[56px] w-auto">
+            <Image
+              src="/Heroic_AI.png"
+              alt="Heroic AI Studio Logo"
+              width={220}
+              height={88}
+              priority
+              className="h-full w-auto object-contain"
+            />
           </div>
-          <span className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-            Heroic AI
-          </span>
         </Link>
       </SidebarHeader>
 
       <SidebarSeparator />
 
-      <SidebarContent>
+      {/* ===== Main Navigation ===== */}
+      <SidebarContent className="bg-background">
         <SidebarGroup>
           <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
@@ -138,10 +120,10 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {secondaryNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.url || pathname.startsWith(item.url)}
+                    isActive={pathname.startsWith(item.url)}
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
@@ -155,19 +137,21 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Upgrade Banner */}
+        {/* ===== Upgrade Banner ===== */}
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="rounded-lg border bg-card p-4">
+            <div className="mb-2 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-heroic-blue" />
-              <span className="text-sm font-medium">{t("nav.upgrade")}</span>
+              <span className="text-sm font-medium">
+                {t("nav.upgrade")}
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="mb-3 text-xs text-muted-foreground">
               Get unlimited AI generations and access all tools.
             </p>
             <Link
               href="/dashboard/upgrade"
-              className="inline-flex items-center justify-center rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-colors hover:bg-foreground/90"
+              className="inline-flex w-full items-center justify-center rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:bg-foreground/90"
             >
               Upgrade Now
             </Link>
@@ -177,57 +161,62 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarFooter className="p-2">
+      {/* ===== User Menu ===== */}
+      <SidebarFooter className="bg-background p-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
+                <SidebarMenuButton size="lg">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-heroic-blue text-foreground">
+                    <AvatarFallback className="rounded-lg bg-heroic-blue text-background">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name || "User"}</span>
-                    <span className="truncate text-xs text-muted-foreground">
+                  <div className="flex-1 text-left text-sm leading-tight">
+                    <span className="block truncate font-semibold">
+                      {user?.name || "User"}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
                       {user?.email || "user@example.com"}
                     </span>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
+                  <ChevronsUpDown className="ml-auto h-4 w-4" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side="bottom"
                 align="end"
-                sideOffset={4}
+                side="top"
+                sideOffset={6}
+                className="w-56"
               >
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings?tab=profile">
                     <User className="mr-2 h-4 w-4" />
-                    <span>{t("common.profile")}</span>
+                    Profile
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings?tab=billing">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
+                    Billing
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>{t("common.settings")}</span>
+                    Settings
                   </Link>
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>{t("common.logout")}</span>
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

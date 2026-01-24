@@ -1,16 +1,23 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-              <span className="text-sm font-bold text-background">H</span>
-            </div>
-            <span className="text-lg font-semibold tracking-tight">Heroic AI</span>
-          </Link>
+          <Link href="/" className="flex items-center">
+                      <div className="relative h-[72px] md:h-[84px] w-auto">
+                        <Image
+                          src="/Heroic_AI.png"
+                          alt="Heroic AI Studio Logo"
+                          width={300}
+                          height={120}
+                          priority
+                          className="h-full w-auto object-contain"
+                        />
+                      </div>
+                    </Link>
         </div>
       </header>
 

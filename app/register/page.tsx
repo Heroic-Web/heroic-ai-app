@@ -14,6 +14,7 @@ import { useLanguage } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { Eye, EyeOff, Loader2, Check, X } from "lucide-react"
+import Image from "next/image"
 
 export default function RegisterPage() {
   const { t } = useLanguage()
@@ -96,12 +97,18 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-            <span className="text-sm font-bold text-background">H</span>
-          </div>
-          <span className="text-lg font-semibold tracking-tight">Heroic AI</span>
-        </Link>
+      <Link href="/" className="flex items-center">
+                  <div className="relative h-[72px] md:h-[84px] w-auto">
+                    <Image
+                      src="/Heroic_AI.png"
+                      alt="Heroic AI Studio Logo"
+                      width={300}
+                      height={120}
+                      priority
+                      className="h-full w-auto object-contain"
+                    />
+                  </div>
+                </Link>
         <LanguageSwitcher />
       </header>
 

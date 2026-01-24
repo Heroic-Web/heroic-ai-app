@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useLanguage } from "@/lib/language-context"
+import Image from "next/image"
 
 export function Footer() {
   const { t } = useLanguage()
@@ -38,12 +39,18 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-                <span className="text-sm font-bold text-background">H</span>
-              </div>
-              <span className="text-lg font-semibold tracking-tight">Heroic AI</span>
-            </Link>
+            <Link href="/" className="flex items-center">
+            <div className="relative h-[72px] md:h-[84px] w-auto">
+              <Image
+                src="/Heroic_AI.png"
+                alt="Heroic AI Studio Logo"
+                width={300}
+                height={120}
+                priority
+                className="h-full w-auto object-contain"
+              />
+            </div>
+          </Link>
             <p className="mt-4 max-w-xs text-sm text-muted-foreground leading-relaxed">
               {t("footer.description")}
             </p>
