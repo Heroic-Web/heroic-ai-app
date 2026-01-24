@@ -107,13 +107,13 @@ export default function GenerateQRPage() {
   const getPlaceholder = () => {
     switch (qrType) {
       case "url":
-        return "https://example.com"
+        return "https://yourlink.com"
       case "text":
         return "Enter your text message..."
       case "email":
-        return "email@example.com"
+        return "youremail@example.com"
       case "phone":
-        return "+1234567890"
+        return "+621234567890"
     }
   }
 

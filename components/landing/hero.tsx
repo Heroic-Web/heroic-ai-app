@@ -41,10 +41,16 @@ export function Hero() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="gap-2 px-8 bg-transparent">
-              <Play className="h-4 w-4" />
-              {t("hero.ctaSecondary")}
-            </Button>
+            <a
+              href="https://wa.me/6282144137914?text=Halo%20saya%20tertarik%20dengan%20aplikasi%20Anda..."
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="lg" className="gap-2 px-8 bg-transparent">
+                <Play className="h-4 w-4" />
+                {t("hero.ctaSecondary")}
+              </Button>
+            </a>
           </div>
 
           {/* Trusted by */}

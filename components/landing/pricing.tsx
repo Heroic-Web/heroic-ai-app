@@ -90,14 +90,20 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register">
+              <a
+                href={`https://wa.me/6282144137914?text=Hello%2C%20I%20would%20like%20to%20order%20the%20${encodeURIComponent(
+                  plan.name ?? "Business Package"
+                )}.%20Please%20share%20the%20details%20and%20pricing.`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
                 >
                   {plan.cta}
                 </Button>
-              </Link>
+              </a>
             </div>
           ))}
         </div>

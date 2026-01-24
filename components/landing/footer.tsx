@@ -20,7 +20,7 @@ export function Footer() {
       { label: t("footer.support"), href: "#" },
     ],
     company: [
-      { label: t("footer.about"), href: "#" },
+      { label: t("footer.about"), href: "/about" },
       { label: t("footer.careers"), href: "#" },
       { label: t("footer.contact"), href: "#" },
       { label: t("footer.partners"), href: "#" },

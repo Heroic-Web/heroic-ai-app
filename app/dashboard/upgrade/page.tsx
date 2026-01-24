@@ -68,7 +68,7 @@ export default function UpgradePage() {
 
   const handleUpgrade = (planName: string) => {
     if (planName === "Business") {
-      window.open("mailto:sales@heroicai.studio?subject=Business Plan Inquiry", "_blank")
+      window.open("mailto:cs.heroicweb@gmail.com?subject=Business Plan Inquiry", "_blank")
     } else {
       alert(`Upgrade to ${planName} plan initiated. In production, this would redirect to a payment page.`)
     }
