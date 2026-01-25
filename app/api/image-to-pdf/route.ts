@@ -1,11 +1,5 @@
 import { NextResponse } from "next/server"
-import { writeFile, mkdir, readFile, rm } from "fs/promises"
-import path from "path"
-import crypto from "crypto"
-import { exec } from "child_process"
-import { promisify } from "util"
-
-const execAsync = promisify(exec)
+import { PDFDocument } from "pdf-lib"
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +15,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // 📐 ukuran halaman (points)
     const pageMap: Record<string, [number, number]> = {
       a4: [595, 842],
       a3: [842, 1191],
@@ -29,55 +22,49 @@ export async function POST(req: Request) {
       legal: [612, 1008],
     }
 
-    let [width, height] = pageMap[pageSize] || pageMap.a4
+    let [pageWidth, pageHeight] = pageMap[pageSize] || pageMap.a4
     if (orientation === "landscape") {
-      ;[width, height] = [height, width]
+      ;[pageWidth, pageHeight] = [pageHeight, pageWidth]
     }
 
-    // ✅ WAJIB: folder di /tmp
-    const baseDir = path.join("/tmp", "image-to-pdf", crypto.randomUUID())
-    await mkdir(baseDir, { recursive: true })
+    const pdfDoc = await PDFDocument.create()
 
-    // 1️⃣ simpan semua image
-    const imagePaths: string[] = []
+    for (const img of images) {
+      const bytes = await img.arrayBuffer()
+      const image =
+        img.type === "image/jpeg" || img.type === "image/jpg"
+          ? await pdfDoc.embedJpg(bytes)
+          : await pdfDoc.embedPng(bytes)
 
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i]
-      const ext = img.type.split("/")[1] || "png"
-      const filePath = path.join(baseDir, `page-${i + 1}.${ext}`)
-      await writeFile(filePath, Buffer.from(await img.arrayBuffer()))
-      imagePaths.push(filePath)
+      const page = pdfDoc.addPage([pageWidth, pageHeight])
+
+      const scale = Math.min(
+        pageWidth / image.width,
+        pageHeight / image.height
+      )
+
+      const w = image.width * scale
+      const h = image.height * scale
+
+      page.drawImage(image, {
+        x: (pageWidth - w) / 2,
+        y: (pageHeight - h) / 2,
+        width: w,
+        height: h,
+      })
     }
 
-    // 2️⃣ output PDF
-    const outputPdf = path.join(baseDir, "result.pdf")
+    const pdfBytes = await pdfDoc.save()
 
-    // 3️⃣ Ghostscript: image → PDF
-    const command = [
-      "gs",
-      "-dBATCH",
-      "-dNOPAUSE",
-      "-q",
-      "-dSAFER",
-      "-sDEVICE=pdfwrite",
-      `-g${width}x${height}`,
-      "-dPDFFitPage",
-      `-sOutputFile=${outputPdf}`,
-      ...imagePaths,
-    ].join(" ")
-
-    await execAsync(command)
-
-    const pdfBuffer = await readFile(outputPdf)
-
-    return new Response(pdfBuffer, {
+    // ✅ FIX TYPE DI SINI JUGA
+    return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'attachment; filename="images-to-pdf.pdf"',
       },
     })
   } catch (err: any) {
-    console.error("IMAGE TO PDF FAILED:", err)
+    console.error("IMAGE TO PDF ERROR:", err)
     return NextResponse.json(
       { error: err.message || "Image to PDF failed" },
       { status: 500 }

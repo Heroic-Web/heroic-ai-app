@@ -1,57 +1,34 @@
 import { NextResponse } from "next/server"
-import { writeFile, unlink, mkdir, readFile } from "fs/promises"
-import path from "path"
-import crypto from "crypto"
-import { exec } from "child_process"
-import { promisify } from "util"
-
-const execAsync = promisify(exec)
+import { PDFDocument } from "pdf-lib"
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
     const files = formData.getAll("files") as File[]
 
-    if (files.length < 2) {
+    if (!files || files.length < 2) {
       return NextResponse.json(
         { error: "At least 2 PDF files are required" },
         { status: 400 }
       )
     }
 
-    // ✅ WAJIB: gunakan /tmp (bukan process.cwd)
-    const tempDir = path.join("/tmp", "pdf", crypto.randomUUID())
-    await mkdir(tempDir, { recursive: true })
+    const mergedPdf = await PDFDocument.create()
 
-    const inputPaths: string[] = []
-
-    // 1️⃣ Simpan semua PDF ke /tmp
-    for (let i = 0; i < files.length; i++) {
-      const buffer = Buffer.from(await files[i].arrayBuffer())
-      const filePath = path.join(tempDir, `input-${i}.pdf`)
-      await writeFile(filePath, buffer)
-      inputPaths.push(filePath)
+    for (const file of files) {
+      const bytes = await file.arrayBuffer()
+      const pdf = await PDFDocument.load(bytes)
+      const pages = await mergedPdf.copyPages(
+        pdf,
+        pdf.getPageIndices()
+      )
+      pages.forEach((page) => mergedPdf.addPage(page))
     }
 
-    // 2️⃣ Merge pakai Ghostscript
-    const outputPath = path.join(tempDir, "merged.pdf")
+    const mergedBytes = await mergedPdf.save()
 
-    const command = [
-      "gs",
-      "-dBATCH",
-      "-dNOPAUSE",
-      "-q",
-      "-sDEVICE=pdfwrite",
-      `-sOutputFile=${outputPath}`,
-      ...inputPaths,
-    ].join(" ")
-
-    await execAsync(command)
-
-    // 3️⃣ Kirim hasil PDF
-    const mergedBuffer = await readFile(outputPath)
-
-    return new Response(mergedBuffer, {
+    // ✅ FIX TYPE DI SINI
+    return new NextResponse(Buffer.from(mergedBytes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'attachment; filename="merged.pdf"',
@@ -60,7 +37,7 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error("MERGE PDF ERROR:", err)
     return NextResponse.json(
-      { error: err.message || "Merge failed" },
+      { error: err.message || "Merge PDF failed" },
       { status: 500 }
     )
   }
