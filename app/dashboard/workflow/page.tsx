@@ -18,11 +18,13 @@ import {
 } from "lucide-react"
 
 /* ================= TYPES ================= */
+type WorkflowStatus = "active" | "paused"
+
 type WorkflowItem = {
   id: number
   name: string
   description: string
-  status: "active" | "paused"
+  status: WorkflowStatus
   lastRun: string
   runs: number
 }
@@ -37,6 +39,7 @@ type TemplateItem = {
 /* ================= PAGE ================= */
 export default function WorkflowPage() {
   const { t, locale } = useLanguage()
+
   const [workflows, setWorkflows] = useState<WorkflowItem[]>([
     {
       id: 1,
@@ -59,17 +62,6 @@ export default function WorkflowPage() {
       status: "paused",
       lastRun: locale === "en" ? "3 days ago" : "3 hari lalu",
       runs: 42,
-    },
-    {
-      id: 3,
-      name: locale === "en" ? "Email Newsletter" : "Newsletter Email",
-      description:
-        locale === "en"
-          ? "Weekly newsletter creation and scheduling"
-          : "Pembuatan dan penjadwalan newsletter mingguan",
-      status: "active",
-      lastRun: locale === "en" ? "1 day ago" : "1 hari lalu",
-      runs: 8,
     },
   ])
 
@@ -114,6 +106,20 @@ export default function WorkflowPage() {
     )
   }
 
+  const useTemplate = (template: TemplateItem) => {
+    const newWorkflow: WorkflowItem = {
+      id: Date.now(),
+      name: template.name,
+      description: template.description,
+      status: "active",
+      lastRun: locale === "en" ? "Never" : "Belum pernah",
+      runs: 0,
+    }
+
+    setWorkflows((prev) => [newWorkflow, ...prev])
+  }
+
+  /* ================= RENDER ================= */
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-6xl">
@@ -144,7 +150,7 @@ export default function WorkflowPage() {
             {workflows.map((workflow) => (
               <Card
                 key={workflow.id}
-                className="hover:bg-secondary/50 transition-colors"
+                className="hover:bg-secondary/50 transition"
               >
                 <CardContent className="flex items-center gap-4 p-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
@@ -225,7 +231,7 @@ export default function WorkflowPage() {
             {templates.map((template) => (
               <Card
                 key={template.id}
-                className="cursor-pointer hover:border-heroic-blue/50 hover:bg-secondary/50 transition"
+                className="hover:bg-secondary/50 transition"
               >
                 <CardContent className="flex flex-col gap-4 p-6">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-heroic-blue/10 text-heroic-blue">
@@ -239,7 +245,12 @@ export default function WorkflowPage() {
                     </p>
                   </div>
 
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => useTemplate(template)}
+                  >
                     {locale === "en" ? "Use Template" : "Gunakan Template"}
                   </Button>
                 </CardContent>
