@@ -17,7 +17,7 @@ export const translations = {
     },
     // Hero Section
     hero: {
-      badge: "All-in-One AI Platform",
+      badge: "All in one AI Platform",
       title: "Create content at the speed of thought",
       subtitle:
         "HINAI Tech Studio combines AI writing, design tools, and utilities in one powerful platform. Write better, design faster, work smarter.",
@@ -153,7 +153,7 @@ export const translations = {
     // Footer
     footer: {
       description:
-        "All-in-one AI platform for content creation, design, and automation.",
+        "All in one AI platform for content creation, design, and automation.",
       product: "Product",
       resources: "Resources",
       company: "Company",
@@ -272,7 +272,7 @@ export const translations = {
     },
     // Hero Section
     hero: {
-      badge: "Platform AI All-in-One",
+      badge: "Platform AI All in one",
       title: "Buat konten dengan kecepatan pikiran",
       subtitle:
         "HINAI Tech menggabungkan AI writing, design tools, dan utilitas dalam satu platform. Tulis lebih baik, desain lebih cepat, kerja lebih cerdas.",
@@ -408,7 +408,7 @@ export const translations = {
     // Footer
     footer: {
       description:
-        "Platform AI all-in-one untuk pembuatan konten, desain, dan otomatisasi.",
+        "Platform AI All in one untuk pembuatan konten, desain, dan otomatisasi.",
       product: "Produk",
       resources: "Sumber Daya",
       company: "Perusahaan",

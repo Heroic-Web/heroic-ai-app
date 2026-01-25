@@ -16,18 +16,21 @@ export default function DashboardLayout({
     setMounted(true)
   }, [])
 
+  // ⛑️ Hindari hydration error
   if (!mounted) return null
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
+        {/* Sidebar */}
         <AppSidebar />
 
-        {/* Main area */}
+        {/* Main Content Area */}
         <SidebarInset className="flex flex-col bg-background">
+          {/* Header */}
           <DashboardHeader />
 
-          {/* Content */}
+          {/* Page Content */}
           <main className="flex-1 bg-background p-6">
             {children}
           </main>

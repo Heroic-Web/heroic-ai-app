@@ -1,30 +1,48 @@
 "use client"
 
-import React from "react"
-
-import { useState, useCallback } from "react"
+import React, { useState, useCallback } from "react"
 import { useLanguage } from "@/lib/language-context"
 import { ToolPageLayout } from "@/components/tools/tool-page-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Upload, Download, FileImage, Trash2, AlertCircle } from "lucide-react"
+import {
+  Upload,
+  Download,
+  FileImage,
+  Trash2,
+  AlertCircle,
+} from "lucide-react"
 
 export default function PdfToImagePage() {
   const { t } = useLanguage()
+
   const [file, setFile] = useState<File | null>(null)
   const [format, setFormat] = useState("png")
   const [quality, setQuality] = useState("high")
   const [isConverting, setIsConverting] = useState(false)
   const [converted, setConverted] = useState(false)
   const [error, setError] = useState("")
+  const [images, setImages] = useState<string[]>([])
+
+  /* =============================
+   * FILE INPUT
+   * ============================= */
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     const droppedFile = e.dataTransfer.files[0]
-    if (droppedFile?.type === "application/pdf") {
+
+    if (droppedFile && droppedFile.type === "application/pdf") {
       setFile(droppedFile)
+      setImages([])
       setConverted(false)
       setError("")
     } else {
@@ -34,8 +52,10 @@ export default function PdfToImagePage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile?.type === "application/pdf") {
+
+    if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile)
+      setImages([])
       setConverted(false)
       setError("")
     } else {
@@ -43,53 +63,70 @@ export default function PdfToImagePage() {
     }
   }
 
-  const handleConvert = async () => {
-    if (!file) return
-    
-    setIsConverting(true)
-    setError("")
-    
-    // Simulate conversion process
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsConverting(false)
-    setConverted(true)
-  }
-
-  const handleDownload = () => {
-    // Create a placeholder image for demo
-    const canvas = document.createElement("canvas")
-    canvas.width = 800
-    canvas.height = 1100
-    const ctx = canvas.getContext("2d")
-    if (ctx) {
-      ctx.fillStyle = "#ffffff"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.fillStyle = "#333333"
-      ctx.font = "24px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(`Converted from: ${file?.name}`, canvas.width / 2, canvas.height / 2)
-      ctx.font = "16px Arial"
-      ctx.fillText(`Format: ${format.toUpperCase()} | Quality: ${quality}`, canvas.width / 2, canvas.height / 2 + 40)
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = `${file?.name.replace(".pdf", "")}_page1.${format}`
-          a.click()
-          URL.revokeObjectURL(url)
-        }
-      }, `image/${format}`, quality === "high" ? 1 : quality === "medium" ? 0.8 : 0.6)
-    }
-  }
-
   const handleRemove = () => {
     setFile(null)
+    setImages([])
     setConverted(false)
     setError("")
   }
+
+  /* =============================
+   * CONVERT (CALL API)
+   * ============================= */
+
+  const handleConvert = async () => {
+    if (!file) return
+
+    setIsConverting(true)
+    setError("")
+    setImages([])
+    setConverted(false)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("format", format)
+      formData.append("quality", quality)
+
+      const res = await fetch("/api/pdf-to-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Conversion failed")
+      }
+
+      const data = await res.json()
+
+      if (!Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error("No images generated from PDF")
+      }
+
+      setImages(data.images.map((img: any) => img.data))
+      setConverted(true)
+    } catch (err: any) {
+      setError(err.message || "Conversion failed")
+    } finally {
+      setIsConverting(false)
+    }
+  }
+
+  /* =============================
+   * DOWNLOAD
+   * ============================= */
+
+  const handleDownload = (base64: string, index: number) => {
+    const a = document.createElement("a")
+    a.href = `data:image/${format};base64,${base64}`
+    a.download = `${file?.name.replace(".pdf", "")}_page${index + 1}.${format}`
+    a.click()
+  }
+
+  /* =============================
+   * RENDER
+   * ============================= */
 
   return (
     <ToolPageLayout
@@ -97,13 +134,17 @@ export default function PdfToImagePage() {
       description="Convert PDF pages to high-quality images"
     >
       <div className="grid gap-6 lg:grid-cols-2">
+
+        {/* LEFT */}
         <div className="space-y-4">
           {!file ? (
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-accent/50 transition-colors cursor-pointer"
-              onClick={() => document.getElementById("pdf-input")?.click()}
+              onClick={() =>
+                document.getElementById("pdf-input")?.click()
+              }
+              className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer hover:border-accent/50"
             >
               <input
                 id="pdf-input"
@@ -113,58 +154,64 @@ export default function PdfToImagePage() {
                 className="hidden"
               />
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-foreground font-medium mb-2">Drop your PDF here</p>
-              <p className="text-sm text-muted-foreground">or click to browse</p>
+              <p className="font-medium">Drop your PDF here</p>
+              <p className="text-sm text-muted-foreground">
+                or click to browse
+              </p>
             </div>
           ) : (
-            <Card className="bg-secondary/30 border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-red-500/20">
-                      <FileImage className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground truncate max-w-[200px]">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+            <Card className="bg-secondary/30">
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <div className="p-2 rounded bg-red-500/20">
+                    <FileImage className="h-5 w-5 text-red-400" />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={handleRemove}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                  <div>
+                    <p className="font-medium truncate max-w-[200px]">
+                      {file.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRemove}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </CardContent>
             </Card>
           )}
 
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+            <div className="flex gap-2 items-center p-3 rounded bg-destructive/10 text-destructive">
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">{error}</span>
             </div>
           )}
 
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label>Output Format</Label>
               <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger className="bg-secondary/50 border-border">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="png">PNG (Best Quality)</SelectItem>
-                  <SelectItem value="jpeg">JPEG (Smaller Size)</SelectItem>
-                  <SelectItem value="webp">WebP (Modern Format)</SelectItem>
+                  <SelectItem value="png">PNG</SelectItem>
+                  <SelectItem value="jpeg">JPEG</SelectItem>
+                  <SelectItem value="webp">WebP</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label>Quality</Label>
               <Select value={quality} onValueChange={setQuality}>
-                <SelectTrigger className="bg-secondary/50 border-border">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,45 +226,44 @@ export default function PdfToImagePage() {
           <Button
             onClick={handleConvert}
             disabled={!file || isConverting}
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            className="w-full"
           >
-            {isConverting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent mr-2" />
-                Converting...
-              </>
-            ) : (
-              <>
-                <FileImage className="mr-2 h-4 w-4" />
-                Convert to {format.toUpperCase()}
-              </>
-            )}
+            {isConverting
+              ? "Converting..."
+              : `Convert to ${format.toUpperCase()}`}
           </Button>
         </div>
 
-        <div className="space-y-4">
-          <Card className="bg-secondary/30 border-border">
+        {/* RIGHT */}
+        <div>
+          <Card>
             <CardContent className="p-6">
-              <h3 className="font-medium text-foreground mb-4">Preview</h3>
-              {converted ? (
-                <div className="space-y-4">
-                  <div className="aspect-[3/4] bg-card rounded-lg flex items-center justify-center border border-border">
-                    <div className="text-center">
-                      <FileImage className="h-16 w-16 mx-auto text-accent mb-4" />
-                      <p className="text-foreground font-medium">Page 1</p>
-                      <p className="text-sm text-muted-foreground">Ready to download</p>
+              <h3 className="font-medium mb-4">Preview</h3>
+
+              {converted && images.length > 0 ? (
+                <div className="space-y-6">
+                  {images.map((img, i) => (
+                    <div key={i} className="space-y-2">
+                      <img
+                        src={`data:image/${format};base64,${img}`}
+                        className="w-full rounded border"
+                        alt={`Page ${i + 1}`}
+                      />
+                      <Button
+                        onClick={() => handleDownload(img, i)}
+                        className="w-full"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Page {i + 1}
+                      </Button>
                     </div>
-                  </div>
-                  <Button onClick={handleDownload} className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Image
-                  </Button>
+                  ))}
                 </div>
               ) : (
-                <div className="aspect-[3/4] bg-card rounded-lg flex items-center justify-center border border-border">
-                  <p className="text-muted-foreground">
-                    {file ? "Click convert to see preview" : "Upload a PDF to see preview"}
-                  </p>
+                <div className="aspect-[3/4] flex items-center justify-center text-muted-foreground border rounded">
+                  {file
+                    ? "Click convert to see preview"
+                    : "Upload a PDF to see preview"}
                 </div>
               )}
             </CardContent>

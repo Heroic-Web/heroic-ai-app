@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useLanguage } from '@/lib/language-context'
 import { useAuth } from '@/lib/auth-context'
+
 import {
   Card,
   CardContent,
@@ -10,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+
 import {
   FileText,
   ImageIcon,
@@ -24,6 +26,7 @@ import {
 /* ======================
    TYPES (ANTI MERAH)
 ====================== */
+
 type QuickAction = {
   title: string
   description: string
@@ -40,6 +43,10 @@ type RecentProject = {
   icon: LucideIcon
 }
 
+/* ======================
+   PAGE
+====================== */
+
 export default function DashboardPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
@@ -47,6 +54,7 @@ export default function DashboardPage() {
   /* ======================
      QUICK ACTIONS
   ====================== */
+
   const quickActions: QuickAction[] = [
     {
       title: t('dashboard.newArticle'),
@@ -57,14 +65,14 @@ export default function DashboardPage() {
     },
     {
       title: t('dashboard.newDesign'),
-      description: 'Create with AI Image',
+      description: 'Create AI-generated images',
       icon: ImageIcon,
       href: '/dashboard/design',
       color: 'bg-purple-500/10 text-purple-500',
     },
     {
       title: t('dashboard.uploadFile'),
-      description: 'Convert, compress, edit',
+      description: 'Convert, compress, edit files',
       icon: Upload,
       href: '/dashboard/tools',
       color: 'bg-green-500/10 text-green-500',
@@ -72,9 +80,9 @@ export default function DashboardPage() {
   ]
 
   /* ======================
-     RECENT PROJECTS
-     (DUMMY – AMAN & BISA DIGANTI API)
+     RECENT PROJECTS (DUMMY)
   ====================== */
+
   const recentProjects: RecentProject[] = [
     {
       id: 1,
@@ -100,19 +108,31 @@ export default function DashboardPage() {
   ]
 
   /* ======================
-     USAGE STATS
+     USAGE STATS (STABLE)
   ====================== */
+
   const usageStats = {
-    aiGenerations: { used: 45, total: 100 },
-    storage: { used: 2.4, total: 5 },
-    tools: { used: 12 },
+    aiGenerations: {
+      used: 45,
+      total: 100,
+      percent: 45,
+    },
+    storage: {
+      used: 2.4,
+      total: 5,
+      percent: 48,
+    },
+    tools: {
+      used: 12,
+    },
   }
 
   return (
     <div className="flex-1 overflow-auto p-6">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl space-y-8">
+
         {/* ===== Welcome ===== */}
-        <div className="mb-8">
+        <div>
           <h2 className="text-2xl font-bold tracking-tight">
             {t('dashboard.welcome')}, {user?.name || 'User'}!
           </h2>
@@ -122,7 +142,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ===== Quick Actions ===== */}
-        <div className="mb-8">
+        <section>
           <h3 className="mb-4 text-lg font-semibold">
             {t('dashboard.quickActions')}
           </h3>
@@ -137,31 +157,33 @@ export default function DashboardPage() {
                     >
                       <action.icon className="h-6 w-6" />
                     </div>
+
                     <div className="flex-1">
                       <h4 className="font-semibold">{action.title}</h4>
                       <p className="text-sm text-muted-foreground">
                         {action.description}
                       </p>
                     </div>
+
                     <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
                   </CardContent>
                 </Card>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* ===== Main Content ===== */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-6 lg:grid-cols-3">
+
           {/* ===== Recent Projects ===== */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">
+                <CardTitle>
                   {t('dashboard.recentProjects')}
                 </CardTitle>
 
-                {/* 🔥 FIX: View All BENAR */}
                 <Button asChild variant="ghost" size="sm">
                   <Link
                     href="/dashboard/recent-projects"
@@ -182,12 +204,14 @@ export default function DashboardPage() {
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
                       <project.icon className="h-5 w-5 text-muted-foreground" />
                     </div>
+
                     <div className="flex-1">
                       <h4 className="font-medium">{project.title}</h4>
                       <p className="text-sm text-muted-foreground">
                         {project.type}
                       </p>
                     </div>
+
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {project.updatedAt}
@@ -201,60 +225,47 @@ export default function DashboardPage() {
           {/* ===== Usage ===== */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">
+              <CardTitle>
                 {t('dashboard.usage')}
               </CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-6">
+
               {/* AI Generations */}
               <div>
-                <div className="mb-2 flex items-center justify-between text-sm">
+                <div className="mb-2 flex justify-between text-sm">
                   <span className="flex items-center gap-2 font-medium">
                     <Sparkles className="h-4 w-4 text-heroic-blue" />
                     AI Generations
                   </span>
                   <span className="text-muted-foreground">
-                    {usageStats.aiGenerations.used}/
-                    {usageStats.aiGenerations.total}
+                    {usageStats.aiGenerations.used}/{usageStats.aiGenerations.total}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-heroic-blue"
-                    style={{
-                      width: `${
-                        (usageStats.aiGenerations.used /
-                          usageStats.aiGenerations.total) *
-                        100
-                      }%`,
-                    }}
+                    style={{ width: `${usageStats.aiGenerations.percent}%` }}
                   />
                 </div>
               </div>
 
               {/* Storage */}
               <div>
-                <div className="mb-2 flex items-center justify-between text-sm">
+                <div className="mb-2 flex justify-between text-sm">
                   <span className="flex items-center gap-2 font-medium">
                     <FileIcon className="h-4 w-4 text-green-500" />
                     Storage
                   </span>
                   <span className="text-muted-foreground">
-                    {usageStats.storage.used}GB /{' '}
-                    {usageStats.storage.total}GB
+                    {usageStats.storage.used}GB / {usageStats.storage.total}GB
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-green-500"
-                    style={{
-                      width: `${
-                        (usageStats.storage.used /
-                          usageStats.storage.total) *
-                        100
-                      }%`,
-                    }}
+                    style={{ width: `${usageStats.storage.percent}%` }}
                   />
                 </div>
               </div>
@@ -264,9 +275,10 @@ export default function DashboardPage() {
                   Upgrade for More
                 </Button>
               </Link>
+
             </CardContent>
           </Card>
-        </div>
+        </section>
       </div>
     </div>
   )

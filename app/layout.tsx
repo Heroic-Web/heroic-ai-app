@@ -45,7 +45,7 @@ const geistMono = localFont({
 
 /* ================= METADATA ================= */
 export const metadata: Metadata = {
-  title: "HINAI Tech - All-in-One AI Content, Design & Utility Platform",
+  title: "HINAI Tech - All in one AI Content, Design & Utility Platform",
   description:
     "Create content at the speed of thought. HINAI Tech combines AI writing, design tools, and utilities in one powerful platform.",
   applicationName: "HINAI Tech",
