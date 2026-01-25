@@ -1,9 +1,15 @@
-"use client"
+'use client'
 
-import { useLanguage } from "@/lib/language-context"
-import { useAuth } from "@/lib/auth-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import Link from 'next/link'
+import { useLanguage } from '@/lib/language-context'
+import { useAuth } from '@/lib/auth-context'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   FileText,
   ImageIcon,
@@ -12,61 +18,90 @@ import {
   Sparkles,
   FileIcon,
   Clock,
-} from "lucide-react"
-import Link from "next/link"
+  LucideIcon,
+} from 'lucide-react'
+
+/* ======================
+   TYPES (ANTI MERAH)
+====================== */
+type QuickAction = {
+  title: string
+  description: string
+  icon: LucideIcon
+  href: string
+  color: string
+}
+
+type RecentProject = {
+  id: number
+  title: string
+  type: string
+  updatedAt: string
+  icon: LucideIcon
+}
 
 export default function DashboardPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
 
-  const quickActions = [
+  /* ======================
+     QUICK ACTIONS
+  ====================== */
+  const quickActions: QuickAction[] = [
     {
-      title: t("dashboard.newArticle"),
-      description: "Start writing with AI",
+      title: t('dashboard.newArticle'),
+      description: 'Start writing with AI',
       icon: FileText,
-      href: "/dashboard/writer",
-      color: "bg-blue-500/10 text-blue-500",
+      href: '/dashboard/writer',
+      color: 'bg-blue-500/10 text-blue-500',
     },
     {
-      title: t("dashboard.newDesign"),
-      description: "Create with AI Image",
+      title: t('dashboard.newDesign'),
+      description: 'Create with AI Image',
       icon: ImageIcon,
-      href: "/dashboard/design",
-      color: "bg-purple-500/10 text-purple-500",
+      href: '/dashboard/design',
+      color: 'bg-purple-500/10 text-purple-500',
     },
     {
-      title: t("dashboard.uploadFile"),
-      description: "Convert, compress, edit",
+      title: t('dashboard.uploadFile'),
+      description: 'Convert, compress, edit',
       icon: Upload,
-      href: "/dashboard/tools",
-      color: "bg-green-500/10 text-green-500",
+      href: '/dashboard/tools',
+      color: 'bg-green-500/10 text-green-500',
     },
   ]
 
-  const recentProjects = [
+  /* ======================
+     RECENT PROJECTS
+     (DUMMY – AMAN & BISA DIGANTI API)
+  ====================== */
+  const recentProjects: RecentProject[] = [
     {
       id: 1,
-      title: "Marketing Blog Post",
-      type: "Article",
-      updatedAt: "2 hours ago",
+      title: 'Marketing Blog Post',
+      type: 'Article',
+      updatedAt: '2 hours ago',
       icon: FileText,
     },
     {
       id: 2,
-      title: "Social Media Banner",
-      type: "Design",
-      updatedAt: "5 hours ago",
+      title: 'Social Media Banner',
+      type: 'Design',
+      updatedAt: '5 hours ago',
       icon: ImageIcon,
     },
     {
       id: 3,
-      title: "Product Description",
-      type: "Copy",
-      updatedAt: "1 day ago",
+      title: 'Product Description',
+      type: 'Copy',
+      updatedAt: '1 day ago',
       icon: FileIcon,
     },
   ]
 
+  /* ======================
+     USAGE STATS
+  ====================== */
   const usageStats = {
     aiGenerations: { used: 45, total: 100 },
     storage: { used: 2.4, total: 5 },
@@ -79,7 +114,7 @@ export default function DashboardPage() {
         {/* ===== Welcome ===== */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold tracking-tight">
-            {t("dashboard.welcome")}, {user?.name || "User"}!
+            {t('dashboard.welcome')}, {user?.name || 'User'}!
           </h2>
           <p className="mt-1 text-muted-foreground">
             What would you like to create today?
@@ -89,7 +124,7 @@ export default function DashboardPage() {
         {/* ===== Quick Actions ===== */}
         <div className="mb-8">
           <h3 className="mb-4 text-lg font-semibold">
-            {t("dashboard.quickActions")}
+            {t('dashboard.quickActions')}
           </h3>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -118,16 +153,23 @@ export default function DashboardPage() {
 
         {/* ===== Main Content ===== */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Recent Projects */}
+          {/* ===== Recent Projects ===== */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">
-                  {t("dashboard.recentProjects")}
+                  {t('dashboard.recentProjects')}
                 </CardTitle>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  {t("dashboard.viewAll")}
-                  <ArrowRight className="ml-1 h-4 w-4" />
+
+                {/* 🔥 FIX: View All BENAR */}
+                <Button asChild variant="ghost" size="sm">
+                  <Link
+                    href="/dashboard/recent-projects"
+                    className="flex items-center gap-1 text-muted-foreground"
+                  >
+                    {t('dashboard.viewAll')}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
               </CardHeader>
 
@@ -156,11 +198,11 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Usage */}
+          {/* ===== Usage ===== */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                {t("dashboard.usage")}
+                {t('dashboard.usage')}
               </CardTitle>
             </CardHeader>
 
@@ -173,14 +215,19 @@ export default function DashboardPage() {
                     AI Generations
                   </span>
                   <span className="text-muted-foreground">
-                    {usageStats.aiGenerations.used}/{usageStats.aiGenerations.total}
+                    {usageStats.aiGenerations.used}/
+                    {usageStats.aiGenerations.total}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-heroic-blue"
                     style={{
-                      width: `${(usageStats.aiGenerations.used / usageStats.aiGenerations.total) * 100}%`,
+                      width: `${
+                        (usageStats.aiGenerations.used /
+                          usageStats.aiGenerations.total) *
+                        100
+                      }%`,
                     }}
                   />
                 </div>
@@ -194,14 +241,19 @@ export default function DashboardPage() {
                     Storage
                   </span>
                   <span className="text-muted-foreground">
-                    {usageStats.storage.used}GB / {usageStats.storage.total}GB
+                    {usageStats.storage.used}GB /{' '}
+                    {usageStats.storage.total}GB
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-green-500"
                     style={{
-                      width: `${(usageStats.storage.used / usageStats.storage.total) * 100}%`,
+                      width: `${
+                        (usageStats.storage.used /
+                          usageStats.storage.total) *
+                        100
+                      }%`,
                     }}
                   />
                 </div>

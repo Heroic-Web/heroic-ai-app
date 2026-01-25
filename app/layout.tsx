@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import localFont from "next/font/local"
 import { Analytics } from "@vercel/analytics/next"
 
 import { LanguageProvider } from "@/lib/language-context"
@@ -8,15 +8,39 @@ import { Providers } from "./providers"
 
 import "./globals.css"
 
-/* ================= FONT SETUP ================= */
-const geist = Geist({
-  subsets: ["latin"],
+/* ================= FONT SETUP (LOCAL — NO INTERNET) ================= */
+const geist = localFont({
+  src: [
+    {
+      path: "../public/fonts/Geist-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Geist-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Geist-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-geist",
+  display: "swap",
 })
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
+const geistMono = localFont({
+  src: [
+    {
+      path: "../public/fonts/GeistMono-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+  ],
   variable: "--font-geist-mono",
+  display: "swap",
 })
 
 /* ================= METADATA ================= */
