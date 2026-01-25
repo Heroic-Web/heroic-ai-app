@@ -20,7 +20,7 @@ export const translations = {
       badge: "All-in-One AI Platform",
       title: "Create content at the speed of thought",
       subtitle:
-        "HINTech AI Studio combines AI writing, design tools, and utilities in one powerful platform. Write better, design faster, work smarter.",
+        "HINAI Tech Studio combines AI writing, design tools, and utilities in one powerful platform. Write better, design faster, work smarter.",
       cta: "Start Creating Free",
       ctaSecondary: "Watch Demo",
       trustedBy: "Trusted by 10,000+ creators and businesses",
@@ -147,7 +147,7 @@ export const translations = {
     cta: {
       title: "Ready to create heroic content?",
       subtitle:
-        "Join thousands of creators and businesses using HINTech Studio.",
+        "Join thousands of creators and businesses using HINAI Tech.",
       button: "Start Creating Free",
     },
     // Footer
@@ -275,7 +275,7 @@ export const translations = {
       badge: "Platform AI All-in-One",
       title: "Buat konten dengan kecepatan pikiran",
       subtitle:
-        "HINTech Studio menggabungkan AI writing, design tools, dan utilitas dalam satu platform. Tulis lebih baik, desain lebih cepat, kerja lebih cerdas.",
+        "HINAI Tech menggabungkan AI writing, design tools, dan utilitas dalam satu platform. Tulis lebih baik, desain lebih cepat, kerja lebih cerdas.",
       cta: "Mulai Gratis",
       ctaSecondary: "Lihat Demo",
       trustedBy: "Dipercaya oleh 10.000+ kreator dan bisnis",
@@ -402,7 +402,7 @@ export const translations = {
     cta: {
       title: "Siap membuat konten heroik?",
       subtitle:
-        "Bergabung dengan ribuan kreator dan bisnis yang menggunakan HINTech Studio.",
+        "Bergabung dengan ribuan kreator dan bisnis yang menggunakan HINAI Tech.",
       button: "Mulai Gratis",
     },
     // Footer

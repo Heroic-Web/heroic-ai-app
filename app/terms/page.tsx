@@ -10,7 +10,7 @@ export default function TermsPage() {
                       <div className="relative h-[72px] md:h-[84px] w-auto">
                         <Image
                           src="/Heroic_AI.png"
-                          alt="HINTech Studio Logo"
+                          alt="HINAI Tech Logo"
                           width={300}
                           height={120}
                           priority
@@ -32,14 +32,14 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">1. Acceptance of Terms</h2>
             <p>
-              By accessing and using HINTech Studio, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+              By accessing and using HINAI Tech, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">2. Description of Service</h2>
             <p>
-              HINTech Studio is an AI-powered content creation platform that provides writing assistance, design tools, and various utilities. Our services include but are not limited to AI content generation, image processing, PDF manipulation, and text transformation tools.
+              HINAI Tech is an AI-powered content creation platform that provides writing assistance, design tools, and various utilities. Our services include but are not limited to AI content generation, image processing, PDF manipulation, and text transformation tools.
             </p>
           </section>
 
@@ -65,7 +65,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">5. Content Ownership</h2>
             <p>
-              You retain ownership of all content you create using our service. However, you grant HINTech Studio a non-exclusive license to use, store, and process your content solely for the purpose of providing our services.
+              You retain ownership of all content you create using our service. However, you grant HINAI Tech a non-exclusive license to use, store, and process your content solely for the purpose of providing our services.
             </p>
           </section>
 
@@ -79,7 +79,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">7. Limitation of Liability</h2>
             <p>
-              HINTech Studio shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.
+              HINAI Tech shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service.
             </p>
           </section>
 

@@ -28,10 +28,10 @@ export default function AboutPage() {
             className="mb-16 text-center"
           >
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              About HINTech AI Studio
+              About HINAI Tech Studio
             </h1>
             <p className="mt-5 text-lg text-muted-foreground max-w-2xl mx-auto">
-              HINTech AI Studio is a modern AI platform built to help businesses
+              HINAI Tech Studio is a modern AI platform built to help businesses
               create smarter, faster, and more scalable digital solutions.
             </p>
           </motion.div>
@@ -45,7 +45,7 @@ export default function AboutPage() {
           >
             <p>
               <strong className="text-foreground">
-                HINTech AI Studio
+                HINAI Tech Studio
               </strong>{" "}
               is an AI-powered application platform designed to support product
               development, business automation, and intelligent digital
@@ -65,7 +65,7 @@ export default function AboutPage() {
             </p>
 
             <p>
-              Through HINTech Studio, users can access a collection of
+              Through HINAI Tech, users can access a collection of
               AI driven tools for content generation, document processing,
               workflow automation, and digital optimization—enabling teams to
               work more efficiently and make data-driven decisions.
@@ -135,7 +135,7 @@ export default function AboutPage() {
           {/* ================= TABLE SECTION ================= */}
           <div className="my-24">
             <h2 className="text-2xl font-semibold text-center mb-10">
-              Why Choose HINTech Studio
+              Why Choose HINAI Tech
             </h2>
 
             <div className="overflow-x-auto">
@@ -146,7 +146,7 @@ export default function AboutPage() {
                       Aspect
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-medium">
-                      HINTech Studio
+                      HINAI Tech
                     </th>
                   </tr>
                 </thead>
@@ -198,7 +198,7 @@ export default function AboutPage() {
             <p className="text-muted-foreground">
               Our vision is to become a trusted AI technology partner that helps
               organizations adopt intelligent systems seamlessly and
-              sustainably. Through HINTech Studio, PT Heroic Inovasi Nusantara
+              sustainably. Through HINAI Tech, PT Heroic Inovasi Nusantara
               aims to bridge the gap between advanced AI technology and practical
               business solutions.
             </p>

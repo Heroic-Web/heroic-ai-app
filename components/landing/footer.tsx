@@ -44,7 +44,7 @@ export function Footer() {
               <div className="relative h-[72px] md:h-[84px] w-auto">
                 <Image
                   src="/Heroic_AI.png"
-                  alt="HINTech Studio Logo"
+                  alt="HINAI Tech Logo"
                   width={300}
                   height={120}
                   priority
@@ -91,7 +91,7 @@ export function Footer() {
         {/* ================= BOTTOM ================= */}
         <div className="mt-12 border-t border-border pt-6">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} HINTech Studio.{" "}
+            © {new Date().getFullYear()} HINAI Tech.{" "}
             {t("footer.copyright")}
           </p>
         </div>

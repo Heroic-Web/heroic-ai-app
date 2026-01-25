@@ -10,7 +10,7 @@ export default function PrivacyPage() {
             <div className="relative h-[72px] md:h-[84px] w-auto">
               <Image
                 src="/Heroic_AI.png"
-                alt="HINTech Studio Logo"
+                alt="HINAI Tech Logo"
                 width={300}
                 height={120}
                 priority

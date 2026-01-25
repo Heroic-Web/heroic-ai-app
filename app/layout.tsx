@@ -45,10 +45,10 @@ const geistMono = localFont({
 
 /* ================= METADATA ================= */
 export const metadata: Metadata = {
-  title: "HINTech Studio - All-in-One AI Content, Design & Utility Platform",
+  title: "HINAI Tech - All-in-One AI Content, Design & Utility Platform",
   description:
-    "Create content at the speed of thought. HINTech Studio combines AI writing, design tools, and utilities in one powerful platform.",
-  applicationName: "HINTech Studio",
+    "Create content at the speed of thought. HINAI Tech combines AI writing, design tools, and utilities in one powerful platform.",
+  applicationName: "HINAI Tech",
   authors: [{ name: "HINTech", url: "https://heroic.web.id" }],
   creator: "Rodhi Faisal Mufid",
   keywords: [
