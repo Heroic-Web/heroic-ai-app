@@ -8,7 +8,7 @@ import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"
 
 export const runtime = "nodejs"
 
-// ⛑️ worker dimatikan dengan cara aman
+// 🔒 Matikan worker (serverless-safe)
 pdfjs.GlobalWorkerOptions.workerSrc = ""
 
 type ImageResult = {
@@ -17,14 +17,14 @@ type ImageResult = {
 }
 
 // ===============================
-// CanvasFactory untuk Node
+// CanvasFactory Node (RESMI pdfjs)
 // ===============================
 class NodeCanvasFactory {
   create(width: number, height: number) {
     const canvas = createCanvas(width, height)
     const context = canvas.getContext("2d")
     if (!context) {
-      throw new Error("Failed to get canvas context")
+      throw new Error("Failed to create canvas context")
     }
     return { canvas, context }
   }
@@ -34,6 +34,9 @@ export async function POST(req: Request) {
   let workDir: string | null = null
 
   try {
+    // 🔥 DEBUG WAJIB — memastikan route ini yang dipakai
+    console.log("🔥 PDFJS ROUTE ACTIVE")
+
     // ===============================
     // 1️⃣ FORM DATA
     // ===============================
@@ -47,13 +50,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const qualityRaw = String(formData.get("quality"))
-    const quality =
-      qualityRaw === "high" ||
-      qualityRaw === "medium" ||
-      qualityRaw === "low"
-        ? qualityRaw
-        : "high"
+    const quality = ["high", "medium", "low"].includes(
+      String(formData.get("quality"))
+    )
+      ? String(formData.get("quality"))
+      : "high"
 
     const scale =
       quality === "high" ? 3 :
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
       1.2
 
     // ===============================
-    // 2️⃣ TEMP DIR
+    // 2️⃣ TEMP DIR (/tmp ONLY)
     // ===============================
     workDir = path.join(os.tmpdir(), "pdf-to-image", crypto.randomUUID())
     await mkdir(workDir, { recursive: true })
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
     const canvasFactory = new NodeCanvasFactory()
 
     // ===============================
-    // 4️⃣ RENDER TIAP HALAMAN
+    // 4️⃣ RENDER SETIAP HALAMAN
     // ===============================
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum)
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
         Math.floor(viewport.height)
       )
 
-      // 🔥 INI KUNCINYA — 1 BARIS SAJA
+      // ⚠️ cast any = SOLUSI RESMI (typing pdfjs rusak)
       await (page.render as any)({
         viewport,
         canvasFactory,
@@ -114,7 +115,10 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error("PDF TO IMAGE ERROR:", err)
     return NextResponse.json(
-      { success: false, message: err?.message || "PDF conversion failed" },
+      {
+        success: false,
+        message: err?.message || "PDF conversion failed",
+      },
       { status: 500 }
     )
   } finally {
