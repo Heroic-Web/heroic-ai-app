@@ -1,8 +1,6 @@
 "use client"
 
 import React, { useState, useCallback } from "react"
-import * as pdfjsLib from "pdfjs-dist"
-
 import { useLanguage } from "@/lib/language-context"
 import { ToolPageLayout } from "@/components/tools/tool-page-layout"
 import { Button } from "@/components/ui/button"
@@ -23,8 +21,9 @@ import {
   AlertCircle,
 } from "lucide-react"
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js"
+/* =============================
+ * TYPES
+ * ============================= */
 
 interface ApiImage {
   name: string
@@ -37,6 +36,10 @@ interface ApiResponse {
   images?: ApiImage[]
 }
 
+/* =============================
+ * COMPONENT
+ * ============================= */
+
 export default function PdfToImagePage() {
   const { t } = useLanguage()
 
@@ -47,6 +50,16 @@ export default function PdfToImagePage() {
   const [converted, setConverted] = useState(false)
   const [error, setError] = useState("")
   const [images, setImages] = useState<string[]>([])
+
+  /* =============================
+   * STATE UTILS
+   * ============================= */
+
+  const resetState = () => {
+    setImages([])
+    setConverted(false)
+    setError("")
+  }
 
   /* =============================
    * FILE INPUT
@@ -75,96 +88,112 @@ export default function PdfToImagePage() {
     }
   }
 
-  const resetState = () => {
-    setImages([])
-    setConverted(false)
-    setError("")
-  }
-
   const handleRemove = () => {
     setFile(null)
     resetState()
   }
 
   /* =============================
-   * CLIENT-SIDE FALLBACK
+   * CLIENT SIDE PDF → IMAGE
    * ============================= */
 
-  const convertClientSide = async (pdfFile: File) => {
-    try {
-      // =============================
-      // 1️⃣ LOAD PDF
-      // =============================
-      const buffer = await pdfFile.arrayBuffer()
-
-      const loadingTask = pdfjsLib.getDocument({ data: buffer })
-      const pdf = await loadingTask.promise
-
-      // =============================
-      // 2️⃣ QUALITY → SCALE
-      // =============================
-      const scale =
-        quality === "high"
-          ? 2
-          : quality === "medium"
-          ? 1.5
-          : 1
-
+    const convertClientSide = async (pdfFile: File) => {
       const resultImages: string[] = []
 
-      // =============================
-      // 3️⃣ RENDER PER PAGE
-      // =============================
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-        const page = await pdf.getPage(pageNumber)
-        const viewport = page.getViewport({ scale })
+      try {
+        // =============================
+        // 0️⃣ VALIDASI
+        // =============================
+        if (pdfFile.size === 0) {
+          resetState()
+          setError("File PDF kosong.")
+          return
+        }
 
-        const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+        if (pdfFile.size > 20 * 1024 * 1024) {
+          resetState()
+          setError("Ukuran PDF terlalu besar (maks 20MB).")
+          return
+        }
 
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-
-        const renderTask = (page.render as any)({
-          canvasContext: ctx,
-          viewport,
-        })
-
-  await renderTask.promise
+        if (typeof window === "undefined") return
 
         // =============================
-        // 4️⃣ SAVE BASE64 (TANPA PREFIX)
+        // 1️⃣ LOAD PDF.JS VIA CDN (NO WORKER)
         // =============================
-        const dataUrl = canvas.toDataURL(`image/${format}`)
-        resultImages.push(dataUrl.split(",")[1])
+        if (!(window as any).pdfjsLib) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement("script")
+            script.src =
+              "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+            script.onload = () => resolve()
+            script.onerror = () => reject()
+            document.body.appendChild(script)
+          })
+        }
+
+        const pdfjsLib = (window as any).pdfjsLib
+
+        // =============================
+        // 2️⃣ LOAD PDF
+        // =============================
+        const buffer = await pdfFile.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+
+        // =============================
+        // 3️⃣ QUALITY → SCALE
+        // =============================
+        const scale =
+          quality === "high" ? 2 :
+          quality === "medium" ? 1.5 : 1
+
+        // =============================
+        // 4️⃣ RENDER PER PAGE
+        // =============================
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const viewport = page.getViewport({ scale })
+
+          const canvas = document.createElement("canvas")
+          const ctx = canvas.getContext("2d")
+          if (!ctx) continue
+
+          canvas.width = Math.floor(viewport.width)
+          canvas.height = Math.floor(viewport.height)
+
+          await page.render({
+            canvasContext: ctx,
+            viewport,
+          }).promise
+
+          const base64 = canvas
+            .toDataURL(`image/${format}`)
+            .split(",")[1]
+
+          resultImages.push(base64)
+          setImages([...resultImages])
+        }
+
+        setConverted(true)
+        setError("")
+      } catch (err) {
+        console.error("CLIENT PDF ERROR:", err)
+        setError("PDF tidak dapat diproses di browser ini.")
+        setConverted(false)
       }
-
-      // =============================
-      // 5️⃣ UPDATE UI (WAJIB)
-      // =============================
-      setImages(resultImages)
-      setConverted(true)
-      setError("")
-
-    } catch (err) {
-      console.error("CLIENT PDF CONVERT ERROR:", err)
-      setError("Failed to convert PDF.")
-      setConverted(false)
     }
-  }
 
   /* =============================
-   * CONVERT (API + FALLBACK)
+   * CONVERT (API → FALLBACK)
    * ============================= */
 
   const handleConvert = async () => {
-    if (!file) return
+    if (!file || isConverting) return
 
     setIsConverting(true)
     resetState()
 
     try {
-      // 1️⃣ TRY BACKEND API
       const formData = new FormData()
       formData.append("file", file)
       formData.append("quality", quality)
@@ -186,12 +215,11 @@ export default function PdfToImagePage() {
         }
       }
 
-      // 2️⃣ FALLBACK CLIENT-SIDE
+      // fallback client-side
       await convertClientSide(file)
-
     } catch (err) {
       console.error("PDF CONVERT ERROR:", err)
-      setError("Failed to convert PDF.")
+      setError("PDF tidak dapat diproses.")
     } finally {
       setIsConverting(false)
     }
@@ -218,7 +246,6 @@ export default function PdfToImagePage() {
       description="Convert PDF pages to high-quality images"
     >
       <div className="grid gap-6 lg:grid-cols-2">
-
         {/* LEFT */}
         <div className="space-y-4">
           {!file ? (

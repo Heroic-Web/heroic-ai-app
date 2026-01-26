@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { writeFile, mkdir, rm, readFile } from "fs/promises"
+import { mkdir, rm } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
 import os from "os"
@@ -8,6 +8,7 @@ export const runtime = "nodejs"
 
 export async function POST(req: Request) {
   let baseDir: string | null = null
+  let browser: any = null
 
   try {
     /* =============================
@@ -27,55 +28,68 @@ export async function POST(req: Request) {
     const scale = quality === "high" ? 2 : quality === "medium" ? 1.5 : 1
 
     /* =============================
-     * 2️⃣ TEMP DIR
+     * 2️⃣ TEMP DIRECTORY
      * ============================= */
     baseDir = path.join(os.tmpdir(), "pdf-to-image", crypto.randomUUID())
     await mkdir(baseDir, { recursive: true })
 
-    const pdfPath = path.join(baseDir, "input.pdf")
     const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(pdfPath, buffer)
+    const pdfBase64 = buffer.toString("base64")
 
     /* =============================
-     * 3️⃣ LAUNCH PUPPETEER
+     * 3️⃣ LAUNCH PUPPETEER (SAFE)
      * ============================= */
-    const puppeteer = (await import("puppeteer")).default
+    const puppeteerModule = await import("puppeteer")
+    const puppeteer = puppeteerModule.default
 
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+
+      // ✅ INI KUNCI STABILITAS
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH ||
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
     })
 
     const page = await browser.newPage()
 
     /* =============================
-     * 4️⃣ LOAD PDF.JS (LOCAL)
+     * 4️⃣ LOAD PDF.JS VIA CDN
+     * (NO WORKER, NO ERROR)
      * ============================= */
-    const pdfJsPath = require.resolve("pdfjs-dist/build/pdf.min.js")
-    await page.addScriptTag({ path: pdfJsPath })
-
-    const pdfBase64 = buffer.toString("base64")
+    await page.addScriptTag({
+      url: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+    })
 
     /* =============================
-     * 5️⃣ RENDER PDF → IMAGE (BROWSER CONTEXT)
+     * 5️⃣ RENDER PDF → IMAGE
      * ============================= */
     const images = await page.evaluate(
       async (base64: string, scaleValue: number) => {
         const pdfData = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
-        const pdf = await (window as any).pdfjsLib.getDocument({ data: pdfData }).promise
+        const pdfjsLib = (window as any).pdfjsLib
 
+        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise
         const results: { name: string; base64: string }[] = []
 
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i)
           const viewport = page.getViewport({ scale: scaleValue })
+
           const canvas = document.createElement("canvas")
           const ctx = canvas.getContext("2d")!
 
-          canvas.width = viewport.width
-          canvas.height = viewport.height
+          canvas.width = Math.floor(viewport.width)
+          canvas.height = Math.floor(viewport.height)
 
           await page.render({ canvasContext: ctx, viewport }).promise
+
           results.push({
             name: `page-${String(i).padStart(3, "0")}.png`,
             base64: canvas.toDataURL("image/png").split(",")[1],
@@ -88,8 +102,6 @@ export async function POST(req: Request) {
       scale
     )
 
-    await browser.close()
-
     /* =============================
      * 6️⃣ RESPONSE
      * ============================= */
@@ -99,12 +111,15 @@ export async function POST(req: Request) {
       images,
     })
   } catch (err) {
-    console.error("PDF TO IMAGE ERROR:", err)
+    console.error("PDF TO IMAGE ROUTE ERROR:", err)
     return NextResponse.json({
       success: false,
       images: [],
     })
   } finally {
+    if (browser) {
+      await browser.close().catch(() => {})
+    }
     if (baseDir) {
       await rm(baseDir, { recursive: true, force: true }).catch(() => {})
     }
