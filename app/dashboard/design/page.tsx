@@ -85,11 +85,6 @@ export default function DesignPage() {
     <div className="flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-6xl space-y-6">
 
-        {/* ✅ HEADER — AMAN */}
-        <DashboardHeader
-          title={titleText}
-        />
-
         <div className="grid gap-6 md:grid-cols-2">
           {designTools.map((tool) => (
             <Card
