@@ -74,39 +74,56 @@ export default function PdfToImagePage() {
    * CONVERT (CALL API)
    * ============================= */
 
-  const handleConvert = async () => {
-    if (!file) return
+const handleConvert = async () => {
+  if (!file) return
 
-    setIsConverting(true)
-    setError("")
-    setImages([])
-    setConverted(false)
+  setIsConverting(true)
+  setError("")
+  setImages([])
+  setConverted(false)
 
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("format", format)
-      formData.append("quality", quality)
+  try {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("format", format)
+    formData.append("quality", quality)
 
-      const res = await fetch("/api/pdf-to-image", {
-        method: "POST",
-        body: formData,
-      })
+    const res = await fetch("/api/pdf-to-image", {
+      method: "POST",
+      body: formData,
+    })
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Conversion failed")
+    // ⛑️ AMAN: baca sebagai text dulu
+    const text = await res.text()
+
+    let data: any
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error("Server error: response tidak valid")
       }
 
-      const data = await res.json()
+      // ❗ tangkap error dari backend
+      if (!res.ok || data?.success === false) {
+        throw new Error(
+          data?.message || data?.error || "Conversion failed"
+        )
+      }
 
+      // validasi hasil
       if (!Array.isArray(data.images) || data.images.length === 0) {
         throw new Error("No images generated from PDF")
       }
 
-      setImages(data.images.map((img: any) => img.data))
+      // sesuaikan dengan backend (base64)
+      setImages(
+        data.images.map((img: any) => img.base64)
+      )
+
       setConverted(true)
+
     } catch (err: any) {
+      console.error("PDF CONVERT UI ERROR:", err)
       setError(err.message || "Conversion failed")
     } finally {
       setIsConverting(false)

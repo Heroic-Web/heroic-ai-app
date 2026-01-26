@@ -5,7 +5,7 @@ import crypto from "crypto"
 import { exec } from "child_process"
 import { promisify } from "util"
 
-export const runtime = "nodejs" // ⬅️ WAJIB (bukan edge)
+export const runtime = "nodejs" // ⬅️ wajib (bukan edge)
 
 const execAsync = promisify(exec)
 
@@ -14,9 +14,18 @@ export async function POST(req: Request) {
 
   try {
     // ===============================
-    // 1️⃣ VALIDASI FORM DATA
+    // 1️⃣ PARSE & VALIDASI FORM DATA
     // ===============================
-    const formData = await req.formData()
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "Invalid form data" },
+        { status: 400 }
+      )
+    }
+
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
@@ -26,33 +35,48 @@ export async function POST(req: Request) {
       )
     }
 
-    const quality = (formData.get("quality") as string) || "high"
+    const qualityRaw = formData.get("quality")
+    const quality =
+      qualityRaw === "high" ||
+      qualityRaw === "medium" ||
+      qualityRaw === "low"
+        ? qualityRaw
+        : "high"
 
-    // DPI mapping
+    // ===============================
+    // 2️⃣ DPI MAPPING (AMAN)
+    // ===============================
     const dpi =
       quality === "high" ? 300 :
       quality === "medium" ? 150 :
       72
 
     // ===============================
-    // 2️⃣ SETUP FOLDER AMAN
+    // 3️⃣ SETUP FOLDER TEMP (UNIK)
     // ===============================
     const requestId = crypto.randomUUID()
     baseDir = path.join(process.cwd(), "tmp", "pdf-to-image", requestId)
-
     await mkdir(baseDir, { recursive: true })
 
     const inputPath = path.join(baseDir, "input.pdf")
     const outputPattern = path.join(baseDir, "page-%03d.png")
 
     // ===============================
-    // 3️⃣ SIMPAN FILE PDF
+    // 4️⃣ SIMPAN FILE PDF
     // ===============================
     const buffer = Buffer.from(await file.arrayBuffer())
+
+    if (buffer.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Uploaded PDF is empty" },
+        { status: 400 }
+      )
+    }
+
     await writeFile(inputPath, buffer)
 
     // ===============================
-    // 4️⃣ EKSEKUSI GHOSTSCRIPT
+    // 5️⃣ JALANKAN GHOSTSCRIPT
     // ===============================
     const command = [
       "gs",
@@ -66,14 +90,27 @@ export async function POST(req: Request) {
       inputPath,
     ].join(" ")
 
-    const { stderr } = await execAsync(command)
+    let execResult
+    try {
+      execResult = await execAsync(command)
+    } catch (err: any) {
+      console.error("Ghostscript exec failed:", err)
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "PDF conversion engine failed. Pastikan server mendukung Ghostscript.",
+        },
+        { status: 500 }
+      )
+    }
 
-    if (stderr) {
-      console.warn("Ghostscript warning:", stderr)
+    if (execResult.stderr) {
+      console.warn("Ghostscript warning:", execResult.stderr)
     }
 
     // ===============================
-    // 5️⃣ BACA HASIL IMAGE
+    // 6️⃣ BACA FILE HASIL
     // ===============================
     const files = (await readdir(baseDir))
       .filter((f) => f.startsWith("page-") && f.endsWith(".png"))
@@ -92,7 +129,9 @@ export async function POST(req: Request) {
 
     const images = await Promise.all(
       files.map(async (name) => {
-        const data = await readFile(path.join(baseDir!, name))
+        const filePath = path.join(baseDir!, name)
+        const data = await readFile(filePath)
+
         return {
           name,
           base64: data.toString("base64"),
@@ -101,7 +140,7 @@ export async function POST(req: Request) {
     )
 
     // ===============================
-    // 6️⃣ RESPONSE FINAL (PASTI JSON)
+    // 7️⃣ RESPONSE FINAL (PASTI JSON)
     // ===============================
     return NextResponse.json({
       success: true,
@@ -110,7 +149,7 @@ export async function POST(req: Request) {
     })
 
   } catch (error: any) {
-    console.error("PDF TO IMAGE ERROR:", error)
+    console.error("PDF TO IMAGE UNHANDLED ERROR:", error)
 
     return NextResponse.json(
       {
@@ -122,10 +161,13 @@ export async function POST(req: Request) {
 
   } finally {
     // ===============================
-    // 7️⃣ CLEANUP AMAN
+    // 8️⃣ CLEANUP (ANTI RACE CONDITION)
     // ===============================
     if (baseDir) {
-      await rm(baseDir, { recursive: true, force: true }).catch(() => {})
+      await rm(baseDir, {
+        recursive: true,
+        force: true,
+      }).catch(() => {})
     }
   }
 }
