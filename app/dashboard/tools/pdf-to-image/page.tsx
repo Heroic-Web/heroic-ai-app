@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState, useCallback } from "react"
+import * as pdfjsLib from "pdfjs-dist"
+
 import { useLanguage } from "@/lib/language-context"
 import { ToolPageLayout } from "@/components/tools/tool-page-layout"
 import { Button } from "@/components/ui/button"
@@ -20,6 +22,9 @@ import {
   Trash2,
   AlertCircle,
 } from "lucide-react"
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js"
 
 interface ApiImage {
   name: string
@@ -53,9 +58,7 @@ export default function PdfToImagePage() {
 
     if (droppedFile?.type === "application/pdf") {
       setFile(droppedFile)
-      setImages([])
-      setConverted(false)
-      setError("")
+      resetState()
     } else {
       setError("Please upload a valid PDF file.")
     }
@@ -66,34 +69,102 @@ export default function PdfToImagePage() {
 
     if (selectedFile?.type === "application/pdf") {
       setFile(selectedFile)
-      setImages([])
-      setConverted(false)
-      setError("")
+      resetState()
     } else {
       setError("Please upload a valid PDF file.")
     }
   }
 
-  const handleRemove = () => {
-    setFile(null)
+  const resetState = () => {
     setImages([])
     setConverted(false)
     setError("")
   }
 
+  const handleRemove = () => {
+    setFile(null)
+    resetState()
+  }
+
   /* =============================
-   * CONVERT
+   * CLIENT-SIDE FALLBACK
+   * ============================= */
+
+  const convertClientSide = async (pdfFile: File) => {
+    try {
+      // =============================
+      // 1️⃣ LOAD PDF
+      // =============================
+      const buffer = await pdfFile.arrayBuffer()
+
+      const loadingTask = pdfjsLib.getDocument({ data: buffer })
+      const pdf = await loadingTask.promise
+
+      // =============================
+      // 2️⃣ QUALITY → SCALE
+      // =============================
+      const scale =
+        quality === "high"
+          ? 2
+          : quality === "medium"
+          ? 1.5
+          : 1
+
+      const resultImages: string[] = []
+
+      // =============================
+      // 3️⃣ RENDER PER PAGE
+      // =============================
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber)
+        const viewport = page.getViewport({ scale })
+
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+
+        const renderTask = (page.render as any)({
+          canvasContext: ctx,
+          viewport,
+        })
+
+  await renderTask.promise
+
+        // =============================
+        // 4️⃣ SAVE BASE64 (TANPA PREFIX)
+        // =============================
+        const dataUrl = canvas.toDataURL(`image/${format}`)
+        resultImages.push(dataUrl.split(",")[1])
+      }
+
+      // =============================
+      // 5️⃣ UPDATE UI (WAJIB)
+      // =============================
+      setImages(resultImages)
+      setConverted(true)
+      setError("")
+
+    } catch (err) {
+      console.error("CLIENT PDF CONVERT ERROR:", err)
+      setError("Failed to convert PDF.")
+      setConverted(false)
+    }
+  }
+
+  /* =============================
+   * CONVERT (API + FALLBACK)
    * ============================= */
 
   const handleConvert = async () => {
     if (!file) return
 
     setIsConverting(true)
-    setError("")
-    setImages([])
-    setConverted(false)
+    resetState()
 
     try {
+      // 1️⃣ TRY BACKEND API
       const formData = new FormData()
       formData.append("file", file)
       formData.append("quality", quality)
@@ -105,29 +176,22 @@ export default function PdfToImagePage() {
 
       const contentType = res.headers.get("content-type") || ""
 
-      if (!contentType.includes("application/json")) {
-        throw new Error("Server error occurred.")
+      if (contentType.includes("application/json")) {
+        const data: ApiResponse = await res.json()
+
+        if (data.success && data.images?.length) {
+          setImages(data.images.map((img) => img.base64))
+          setConverted(true)
+          return
+        }
       }
 
-      const data: ApiResponse = await res.json()
+      // 2️⃣ FALLBACK CLIENT-SIDE
+      await convertClientSide(file)
 
-      if (!data.success) {
-        throw new Error(data.message || "PDF conversion failed.")
-      }
-
-      if (!data.images || data.images.length === 0) {
-        throw new Error("No images generated.")
-      }
-
-      setImages(data.images.map((img) => img.base64))
-      setConverted(true)
     } catch (err) {
-      console.error("UI PDF ERROR:", err)
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to convert PDF."
-      )
+      console.error("PDF CONVERT ERROR:", err)
+      setError("Failed to convert PDF.")
     } finally {
       setIsConverting(false)
     }
@@ -154,6 +218,7 @@ export default function PdfToImagePage() {
       description="Convert PDF pages to high-quality images"
     >
       <div className="grid gap-6 lg:grid-cols-2">
+
         {/* LEFT */}
         <div className="space-y-4">
           {!file ? (
@@ -230,9 +295,9 @@ export default function PdfToImagePage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high">High (300 DPI)</SelectItem>
-                  <SelectItem value="medium">Medium (150 DPI)</SelectItem>
-                  <SelectItem value="low">Low (72 DPI)</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
