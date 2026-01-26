@@ -17,81 +17,92 @@ export async function POST(req: Request) {
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
-      return NextResponse.json({
-        success: false,
-        message: "PDF file is required",
-      })
+      return NextResponse.json({ success: false, images: [] })
     }
 
     const qualityRaw = String(formData.get("quality") || "high")
     const quality =
-      qualityRaw === "medium" || qualityRaw === "low"
-        ? qualityRaw
-        : "high"
+      qualityRaw === "medium" || qualityRaw === "low" ? qualityRaw : "high"
 
     const scale = quality === "high" ? 2 : quality === "medium" ? 1.5 : 1
 
     /* =============================
      * 2️⃣ TEMP DIR
      * ============================= */
-    const requestId = crypto.randomUUID()
-    baseDir = path.join(os.tmpdir(), "pdf-to-image", requestId)
+    baseDir = path.join(os.tmpdir(), "pdf-to-image", crypto.randomUUID())
     await mkdir(baseDir, { recursive: true })
 
-    const inputPath = path.join(baseDir, "input.pdf")
+    const pdfPath = path.join(baseDir, "input.pdf")
     const buffer = Buffer.from(await file.arrayBuffer())
-    await writeFile(inputPath, buffer)
+    await writeFile(pdfPath, buffer)
 
     /* =============================
-     * 3️⃣ LOAD PUPPETEER
+     * 3️⃣ LAUNCH PUPPETEER
      * ============================= */
     const puppeteer = (await import("puppeteer")).default
 
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
       headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     })
 
     const page = await browser.newPage()
 
     /* =============================
-     * 4️⃣ RENDER PDF
+     * 4️⃣ LOAD PDF.JS (LOCAL)
      * ============================= */
-    const pdfBase64 = (await readFile(inputPath)).toString("base64")
+    const pdfJsPath = require.resolve("pdfjs-dist/build/pdf.min.js")
+    await page.addScriptTag({ path: pdfJsPath })
 
-    await page.goto(`data:application/pdf;base64,${pdfBase64}`, {
-      waitUntil: "networkidle0",
-    })
+    const pdfBase64 = buffer.toString("base64")
 
-    const images: { name: string; base64: string }[] = []
+    /* =============================
+     * 5️⃣ RENDER PDF → IMAGE (BROWSER CONTEXT)
+     * ============================= */
+    const images = await page.evaluate(
+      async (base64: string, scaleValue: number) => {
+        const pdfData = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+        const pdf = await (window as any).pdfjsLib.getDocument({ data: pdfData }).promise
 
-    // Ambil screenshot full page (PDF viewer Chromium)
-    const screenshot = await page.screenshot({
-      fullPage: true,
-      type: "png",
-      scale,
-    })
+        const results: { name: string; base64: string }[] = []
 
-    images.push({
-      name: "page-001.png",
-      base64: Buffer.from(screenshot).toString("base64"),
-    })
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const viewport = page.getViewport({ scale: scaleValue })
+          const canvas = document.createElement("canvas")
+          const ctx = canvas.getContext("2d")!
+
+          canvas.width = viewport.width
+          canvas.height = viewport.height
+
+          await page.render({ canvasContext: ctx, viewport }).promise
+          results.push({
+            name: `page-${String(i).padStart(3, "0")}.png`,
+            base64: canvas.toDataURL("image/png").split(",")[1],
+          })
+        }
+
+        return results
+      },
+      pdfBase64,
+      scale
+    )
 
     await browser.close()
 
     /* =============================
-     * 5️⃣ RESPONSE
+     * 6️⃣ RESPONSE
      * ============================= */
     return NextResponse.json({
       success: true,
       pageCount: images.length,
       images,
     })
-  } catch (error) {
-    console.error("PDF TO IMAGE ERROR:", error)
+  } catch (err) {
+    console.error("PDF TO IMAGE ERROR:", err)
     return NextResponse.json({
       success: false,
-      message: "Gagal mengonversi PDF.",
+      images: [],
     })
   } finally {
     if (baseDir) {
