@@ -21,6 +21,8 @@ import {
   FileIcon,
   Clock,
   LucideIcon,
+  Rocket,
+  Star,
 } from 'lucide-react'
 
 /* ======================
@@ -58,21 +60,24 @@ export default function DashboardPage() {
   const quickActions: QuickAction[] = [
     {
       title: t('dashboard.newArticle'),
-      description: 'Start writing with AI',
+      description:
+        'Transform ideas into impactful writing powered by intelligent AI assistance.',
       icon: FileText,
       href: '/dashboard/writer',
       color: 'bg-blue-500/10 text-blue-500',
     },
     {
       title: t('dashboard.newDesign'),
-      description: 'Create AI-generated images',
+      description:
+        'Design stunning visuals, banners, and creative assets in just a few clicks.',
       icon: ImageIcon,
       href: '/dashboard/design',
       color: 'bg-purple-500/10 text-purple-500',
     },
     {
       title: t('dashboard.uploadFile'),
-      description: 'Convert, compress, edit files',
+      description:
+        'Upload, convert, compress, and manage your files effortlessly.',
       icon: Upload,
       href: '/dashboard/tools',
       color: 'bg-green-500/10 text-green-500',
@@ -87,28 +92,28 @@ export default function DashboardPage() {
     {
       id: 1,
       title: 'Marketing Blog Post',
-      type: 'Article',
+      type: 'AI Article',
       updatedAt: '2 hours ago',
       icon: FileText,
     },
     {
       id: 2,
       title: 'Social Media Banner',
-      type: 'Design',
+      type: 'Visual Design',
       updatedAt: '5 hours ago',
       icon: ImageIcon,
     },
     {
       id: 3,
       title: 'Product Description',
-      type: 'Copy',
+      type: 'Copywriting',
       updatedAt: '1 day ago',
       icon: FileIcon,
     },
   ]
 
   /* ======================
-     USAGE STATS (STABLE)
+     USAGE STATS
   ====================== */
 
   const usageStats = {
@@ -129,21 +134,46 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 overflow-auto p-6">
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-6xl space-y-10">
 
-        {/* ===== Welcome ===== */}
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            {t('dashboard.welcome')}, {user?.name || 'User'}!
+        {/* ======================
+           WELCOME SECTION
+        ====================== */}
+        <section className="space-y-3">
+          <h2 className="text-3xl font-bold tracking-tight">
+            {t('dashboard.welcome')}, {user?.name || 'Creator'} 👋
           </h2>
-          <p className="mt-1 text-muted-foreground">
-            What would you like to create today?
-          </p>
-        </div>
 
-        {/* ===== Quick Actions ===== */}
+          <p className="max-w-3xl text-muted-foreground leading-relaxed">
+            Welcome to your personal creative command center. This dashboard
+            is designed to help you turn raw ideas into polished results
+            faster, smarter, and with far less effort. Whether you’re writing,
+            designing, or managing files, everything you need lives right here.
+          </p>
+
+          <p className="max-w-3xl text-muted-foreground leading-relaxed">
+            Think of this space as your digital workshop a place where
+            creativity meets productivity. Every click you make moves your
+            project one step closer to something remarkable.
+          </p>
+
+          <p className="max-w-3xl text-muted-foreground leading-relaxed">
+            Ready to dive in? Explore the tools, check your recent projects,
+            and see your usage stats at a glance. Your next big idea is just a
+            few clicks away.
+          </p>
+
+          <p className="max-w-3xl text-muted-foreground leading-relaxed">
+            Let’s make something amazing today!
+          </p>
+        </section>
+
+        {/* ======================
+           QUICK ACTIONS
+        ====================== */}
         <section>
-          <h3 className="mb-4 text-lg font-semibold">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+            <Rocket className="h-5 w-5 text-heroic-blue" />
             {t('dashboard.quickActions')}
           </h3>
 
@@ -158,7 +188,7 @@ export default function DashboardPage() {
                       <action.icon className="h-6 w-6" />
                     </div>
 
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                       <h4 className="font-semibold">{action.title}</h4>
                       <p className="text-sm text-muted-foreground">
                         {action.description}
@@ -173,14 +203,17 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ===== Main Content ===== */}
+        {/* ======================
+           MAIN CONTENT
+        ====================== */}
         <section className="grid gap-6 lg:grid-cols-3">
 
-          {/* ===== Recent Projects ===== */}
+          {/* ===== RECENT PROJECTS ===== */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-yellow-500" />
                   {t('dashboard.recentProjects')}
                 </CardTitle>
 
@@ -199,7 +232,7 @@ export default function DashboardPage() {
                 {recentProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="flex items-center gap-4 rounded-lg border p-4 hover:bg-secondary/50"
+                    className="flex items-center gap-4 rounded-lg border p-4 transition hover:bg-secondary/50"
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
                       <project.icon className="h-5 w-5 text-muted-foreground" />
@@ -218,11 +251,17 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ))}
+
+                <p className="pt-4 text-sm text-muted-foreground leading-relaxed">
+                  Your recent projects appear here so you can instantly continue
+                  where you left off. No more searching, no more friction
+                  productivity stays uninterrupted.
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* ===== Usage ===== */}
+          {/* ===== USAGE ===== */}
           <Card>
             <CardHeader>
               <CardTitle>
@@ -269,6 +308,16 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Keep track of your usage to stay in control. Upgrade anytime to
+                unlock more power, more storage, and limitless creative freedom.
+              </p>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Need help managing your account or understanding your usage?
+                Visit the support center or contact our team for assistance.
+              </p>
 
               <Link href="/dashboard/upgrade">
                 <Button variant="outline" className="w-full">
