@@ -1,21 +1,41 @@
 import { NextResponse } from "next/server"
-import { writeFile, mkdir, readdir, readFile, rm } from "fs/promises"
+import { mkdir, writeFile, rm, readFile } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
 import os from "os"
-import { exec } from "child_process"
-import { promisify } from "util"
+import { createCanvas } from "canvas"
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"
 
-export const runtime = "nodejs" // wajib
+export const runtime = "nodejs"
 
-const execAsync = promisify(exec)
+// ⛑️ worker dimatikan dengan cara aman
+pdfjs.GlobalWorkerOptions.workerSrc = ""
+
+type ImageResult = {
+  name: string
+  base64: string
+}
+
+// ===============================
+// CanvasFactory untuk Node
+// ===============================
+class NodeCanvasFactory {
+  create(width: number, height: number) {
+    const canvas = createCanvas(width, height)
+    const context = canvas.getContext("2d")
+    if (!context) {
+      throw new Error("Failed to get canvas context")
+    }
+    return { canvas, context }
+  }
+}
 
 export async function POST(req: Request) {
-  let baseDir: string | null = null
+  let workDir: string | null = null
 
   try {
     // ===============================
-    // 1️⃣ PARSE FORM DATA
+    // 1️⃣ FORM DATA
     // ===============================
     const formData = await req.formData()
     const file = formData.get("file")
@@ -27,111 +47,79 @@ export async function POST(req: Request) {
       )
     }
 
-    const quality = ["high", "medium", "low"].includes(
-      String(formData.get("quality"))
-    )
-      ? String(formData.get("quality"))
-      : "high"
+    const qualityRaw = String(formData.get("quality"))
+    const quality =
+      qualityRaw === "high" ||
+      qualityRaw === "medium" ||
+      qualityRaw === "low"
+        ? qualityRaw
+        : "high"
 
-    const dpi =
-      quality === "high" ? 300 :
-      quality === "medium" ? 150 :
-      72
-
-    // ===============================
-    // 2️⃣ FOLDER TEMP (SERVERLESS SAFE)
-    // ===============================
-    const requestId = crypto.randomUUID()
-    baseDir = path.join(os.tmpdir(), "pdf-to-image", requestId)
-
-    await mkdir(baseDir, { recursive: true })
-
-    const inputPath = path.join(baseDir, "input.pdf")
-    const outputPattern = path.join(baseDir, "page-%03d.png")
+    const scale =
+      quality === "high" ? 3 :
+      quality === "medium" ? 2 :
+      1.2
 
     // ===============================
-    // 3️⃣ SIMPAN PDF
+    // 2️⃣ TEMP DIR
     // ===============================
-    const buffer = Buffer.from(await file.arrayBuffer())
-    if (!buffer.length) {
-      return NextResponse.json(
-        { success: false, message: "Uploaded PDF is empty" },
-        { status: 400 }
+    workDir = path.join(os.tmpdir(), "pdf-to-image", crypto.randomUUID())
+    await mkdir(workDir, { recursive: true })
+
+    const pdfPath = path.join(workDir, "input.pdf")
+    await writeFile(pdfPath, Buffer.from(await file.arrayBuffer()))
+
+    // ===============================
+    // 3️⃣ LOAD PDF
+    // ===============================
+    const pdfBuffer = await readFile(pdfPath)
+    const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise
+
+    const images: ImageResult[] = []
+    const canvasFactory = new NodeCanvasFactory()
+
+    // ===============================
+    // 4️⃣ RENDER TIAP HALAMAN
+    // ===============================
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
+      const viewport = page.getViewport({ scale })
+
+      const { canvas } = canvasFactory.create(
+        Math.floor(viewport.width),
+        Math.floor(viewport.height)
       )
-    }
 
-    await writeFile(inputPath, buffer)
+      // 🔥 INI KUNCINYA — 1 BARIS SAJA
+      await (page.render as any)({
+        viewport,
+        canvasFactory,
+      }).promise
 
-    // ===============================
-    // 4️⃣ JALANKAN GHOSTSCRIPT
-    // ===============================
-    const command = [
-      "gs",
-      "-dBATCH",
-      "-dNOPAUSE",
-      "-dSAFER",
-      "-dUseCropBox",
-      "-sDEVICE=png16m",
-      `-r${dpi}`,
-      `-sOutputFile=${outputPattern}`,
-      inputPath,
-    ].join(" ")
-
-    try {
-      await execAsync(command)
-    } catch (err) {
-      console.error("Ghostscript not available:", err)
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "PDF conversion engine not available on this server (Ghostscript missing).",
-        },
-        { status: 500 }
-      )
+      images.push({
+        name: `page-${String(pageNum).padStart(3, "0")}.png`,
+        base64: canvas.toBuffer("image/png").toString("base64"),
+      })
     }
 
     // ===============================
-    // 5️⃣ AMBIL HASIL
+    // 5️⃣ RESPONSE
     // ===============================
-    const files = (await readdir(baseDir))
-      .filter((f) => f.endsWith(".png"))
-      .sort()
-
-    if (!files.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "PDF tidak bisa dikonversi. Biasanya karena PDF scan atau protected.",
-        },
-        { status: 422 }
-      )
-    }
-
-    const images = await Promise.all(
-      files.map(async (name) => ({
-        name,
-        base64: (await readFile(path.join(baseDir!, name))).toString("base64"),
-      }))
-    )
-
     return NextResponse.json({
       success: true,
       pageCount: images.length,
       images,
     })
 
-  } catch (error: any) {
-    console.error("PDF TO IMAGE ERROR:", error)
+  } catch (err: any) {
+    console.error("PDF TO IMAGE ERROR:", err)
     return NextResponse.json(
-      { success: false, message: error?.message || "PDF conversion failed" },
+      { success: false, message: err?.message || "PDF conversion failed" },
       { status: 500 }
     )
-
   } finally {
-    if (baseDir) {
-      await rm(baseDir, { recursive: true, force: true }).catch(() => {})
+    if (workDir) {
+      await rm(workDir, { recursive: true, force: true }).catch(() => {})
     }
   }
 }
