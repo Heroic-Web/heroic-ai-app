@@ -5,37 +5,55 @@ import crypto from "crypto"
 import { exec } from "child_process"
 import { promisify } from "util"
 
+export const runtime = "nodejs" // ⬅️ WAJIB (bukan edge)
+
 const execAsync = promisify(exec)
 
 export async function POST(req: Request) {
-  const formData = await req.formData()
-  const file = formData.get("file") as File | null
-  const quality = (formData.get("quality") as string) || "high"
-
-  if (!file) {
-    return NextResponse.json({ error: "PDF file is required" }, { status: 400 })
-  }
-
-  // DPI mapping (AMAN)
-  const dpi =
-    quality === "high" ? 300 :
-    quality === "medium" ? 150 :
-    72
-
-  // 🔐 Folder unik per request (ANTI BENTROK)
-  const requestId = crypto.randomUUID()
-  const baseDir = path.join(process.cwd(), "tmp/pdf-to-image", requestId)
-  await mkdir(baseDir, { recursive: true })
-
-  const inputPath = path.join(baseDir, "input.pdf")
-  const outputPattern = path.join(baseDir, "page-%03d.png")
+  let baseDir: string | null = null
 
   try {
-    // 1️⃣ Simpan PDF dari UI (RANDOM USER FILE)
+    // ===============================
+    // 1️⃣ VALIDASI FORM DATA
+    // ===============================
+    const formData = await req.formData()
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        { success: false, message: "PDF file is required" },
+        { status: 400 }
+      )
+    }
+
+    const quality = (formData.get("quality") as string) || "high"
+
+    // DPI mapping
+    const dpi =
+      quality === "high" ? 300 :
+      quality === "medium" ? 150 :
+      72
+
+    // ===============================
+    // 2️⃣ SETUP FOLDER AMAN
+    // ===============================
+    const requestId = crypto.randomUUID()
+    baseDir = path.join(process.cwd(), "tmp", "pdf-to-image", requestId)
+
+    await mkdir(baseDir, { recursive: true })
+
+    const inputPath = path.join(baseDir, "input.pdf")
+    const outputPattern = path.join(baseDir, "page-%03d.png")
+
+    // ===============================
+    // 3️⃣ SIMPAN FILE PDF
+    // ===============================
     const buffer = Buffer.from(await file.arrayBuffer())
     await writeFile(inputPath, buffer)
 
-    // 2️⃣ Ghostscript — CONFIG PALING STABIL
+    // ===============================
+    // 4️⃣ EKSEKUSI GHOSTSCRIPT
+    // ===============================
     const command = [
       "gs",
       "-dBATCH",
@@ -44,44 +62,70 @@ export async function POST(req: Request) {
       "-dUseCropBox",
       "-sDEVICE=png16m",
       `-r${dpi}`,
-      `-sOutputFile="${outputPattern}"`,
-      `"${inputPath}"`
+      `-sOutputFile=${outputPattern}`,
+      inputPath,
     ].join(" ")
 
     const { stderr } = await execAsync(command)
 
     if (stderr) {
-      console.warn("GS warning:", stderr)
+      console.warn("Ghostscript warning:", stderr)
     }
 
-    // 3️⃣ Ambil hasil
+    // ===============================
+    // 5️⃣ BACA HASIL IMAGE
+    // ===============================
     const files = (await readdir(baseDir))
-      .filter(f => f.startsWith("page-") && f.endsWith(".png"))
+      .filter((f) => f.startsWith("page-") && f.endsWith(".png"))
       .sort()
 
     if (files.length === 0) {
-      throw new Error(
-        "PDF tidak bisa dikonversi. Biasanya karena PDF scan/XFA/protected. Coba Print → Save as PDF lalu upload ulang."
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "PDF tidak bisa dikonversi. Biasanya karena PDF scan, XFA, atau protected. Coba Print → Save as PDF lalu upload ulang.",
+        },
+        { status: 422 }
       )
     }
 
     const images = await Promise.all(
-      files.map(async (name) => ({
-        name,
-        data: (await readFile(path.join(baseDir, name))).toString("base64"),
-      }))
+      files.map(async (name) => {
+        const data = await readFile(path.join(baseDir!, name))
+        return {
+          name,
+          base64: data.toString("base64"),
+        }
+      })
     )
 
-    return NextResponse.json({ images })
+    // ===============================
+    // 6️⃣ RESPONSE FINAL (PASTI JSON)
+    // ===============================
+    return NextResponse.json({
+      success: true,
+      pageCount: images.length,
+      images,
+    })
 
-  } catch (err: any) {
-    console.error("PDF TO IMAGE FAILED:", err)
+  } catch (error: any) {
+    console.error("PDF TO IMAGE ERROR:", error)
+
     return NextResponse.json(
-      { error: err.message || "PDF conversion failed" },
+      {
+        success: false,
+        message: error?.message || "PDF conversion failed",
+      },
       { status: 500 }
     )
+
   } finally {
-    // 🧹 Bersihkan folder (ANTI BOCOR DISK)
-    await rm(baseDir, { recursive: true, force: true }).catch(() => {})
+    // ===============================
+    // 7️⃣ CLEANUP AMAN
+    // ===============================
+    if (baseDir) {
+      await rm(baseDir, { recursive: true, force: true }).catch(() => {})
+    }
   }
 }
