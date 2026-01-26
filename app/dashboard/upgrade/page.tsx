@@ -21,7 +21,7 @@ export default function UpgradePage() {
       features: [
         "5 AI generations per day",
         "Basic writing tools",
-        "3 Heroic Tools",
+        "3 HINAI Tech Tools",
         "Standard support",
         "1 project",
       ],
@@ -36,7 +36,7 @@ export default function UpgradePage() {
       features: [
         "Unlimited AI generations",
         "All writing tools & templates",
-        "All 50+ Heroic Tools",
+        "All 50+ HINAI Tech Tools",
         "Priority support",
         "Unlimited projects",
         "Export to Word/PDF",

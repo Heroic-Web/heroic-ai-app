@@ -74,57 +74,79 @@ export default function PdfToImagePage() {
    * CONVERT (CALL API)
    * ============================= */
 
-const handleConvert = async () => {
-  if (!file) return
+  const handleConvert = async () => {
+    if (!file) return
 
-  setIsConverting(true)
-  setError("")
-  setImages([])
-  setConverted(false)
+    // =============================
+    // RESET STATE
+    // =============================
+    setIsConverting(true)
+    setError("")
+    setImages([])
+    setConverted(false)
 
-  try {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("format", format)
-    formData.append("quality", quality)
+    try {
+      // =============================
+      // BUILD FORM DATA
+      // =============================
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("quality", quality)
 
-    const res = await fetch("/api/pdf-to-image", {
-      method: "POST",
-      body: formData,
-    })
+      // =============================
+      // CALL API
+      // =============================
+      const res = await fetch("/api/pdf-to-image", {
+        method: "POST",
+        body: formData,
+      })
 
-    // ⛑️ AMAN: baca sebagai text dulu
-    const text = await res.text()
+      /**
+       * ⛔ PENTING (Next.js 16 + Turbopack)
+       * Kalau API error / crash,
+       * DEV server mengirim HTML overlay, BUKAN JSON
+       */
+      const contentType = res.headers.get("content-type") || ""
 
-    let data: any
-      try {
-        data = JSON.parse(text)
-      } catch {
-        throw new Error("Server error: response tidak valid")
-      }
+      // =============================
+      // HANDLE NON-JSON RESPONSE
+      // =============================
+      if (!contentType.includes("application/json")) {
+        const text = await res.text()
+        console.error("NON-JSON RESPONSE FROM SERVER:", text)
 
-      // ❗ tangkap error dari backend
-      if (!res.ok || data?.success === false) {
         throw new Error(
-          data?.message || data?.error || "Conversion failed"
+          "Server error occurred while converting PDF. Please try again."
         )
       }
 
-      // validasi hasil
-      if (!Array.isArray(data.images) || data.images.length === 0) {
-        throw new Error("No images generated from PDF")
+      // =============================
+      // SAFE JSON PARSE
+      // =============================
+      const data = await res.json()
+
+      // =============================
+      // HANDLE API ERROR
+      // =============================
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.message || "PDF conversion failed")
       }
 
-      // sesuaikan dengan backend (base64)
-      setImages(
-        data.images.map((img: any) => img.base64)
-      )
+      // =============================
+      // VALIDATE IMAGE DATA
+      // =============================
+      if (!Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error("No images were generated from the PDF")
+      }
 
+      // =============================
+      // SUCCESS
+      // =============================
+      setImages(data.images.map((img: any) => img.base64))
       setConverted(true)
-
     } catch (err: any) {
-      console.error("PDF CONVERT UI ERROR:", err)
-      setError(err.message || "Conversion failed")
+      console.error("UI PDF CONVERT ERROR:", err)
+      setError(err?.message || "Failed to convert PDF")
     } finally {
       setIsConverting(false)
     }

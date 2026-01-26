@@ -180,7 +180,7 @@ export default function ToolsPage() {
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-6xl">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">Heroic Tools</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">HINAI Tech Tools</h2>
             <p className="text-muted-foreground mt-1">Powerful utilities for your everyday tasks</p>
           </div>
 

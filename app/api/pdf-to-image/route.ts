@@ -1,44 +1,21 @@
 import { NextResponse } from "next/server"
-import { mkdir, writeFile, rm, readFile } from "fs/promises"
+import { writeFile, mkdir, readdir, readFile, rm } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
 import os from "os"
-import { createCanvas } from "canvas"
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"
+import { exec } from "child_process"
+import { promisify } from "util"
 
-export const runtime = "nodejs"
+export const runtime = "nodejs" // wajib
 
-// 🔒 Matikan worker (serverless-safe)
-pdfjs.GlobalWorkerOptions.workerSrc = ""
-
-type ImageResult = {
-  name: string
-  base64: string
-}
-
-// ===============================
-// CanvasFactory Node (RESMI pdfjs)
-// ===============================
-class NodeCanvasFactory {
-  create(width: number, height: number) {
-    const canvas = createCanvas(width, height)
-    const context = canvas.getContext("2d")
-    if (!context) {
-      throw new Error("Failed to create canvas context")
-    }
-    return { canvas, context }
-  }
-}
+const execAsync = promisify(exec)
 
 export async function POST(req: Request) {
-  let workDir: string | null = null
+  let baseDir: string | null = null
 
   try {
-    // 🔥 DEBUG WAJIB — memastikan route ini yang dipakai
-    console.log("🔥 PDFJS ROUTE ACTIVE")
-
     // ===============================
-    // 1️⃣ FORM DATA
+    // 1️⃣ PARSE FORM DATA
     // ===============================
     const formData = await req.formData()
     const file = formData.get("file")
@@ -56,74 +33,105 @@ export async function POST(req: Request) {
       ? String(formData.get("quality"))
       : "high"
 
-    const scale =
-      quality === "high" ? 3 :
-      quality === "medium" ? 2 :
-      1.2
+    const dpi =
+      quality === "high" ? 300 :
+      quality === "medium" ? 150 :
+      72
 
     // ===============================
-    // 2️⃣ TEMP DIR (/tmp ONLY)
+    // 2️⃣ FOLDER TEMP (SERVERLESS SAFE)
     // ===============================
-    workDir = path.join(os.tmpdir(), "pdf-to-image", crypto.randomUUID())
-    await mkdir(workDir, { recursive: true })
+    const requestId = crypto.randomUUID()
+    baseDir = path.join(os.tmpdir(), "pdf-to-image", requestId)
 
-    const pdfPath = path.join(workDir, "input.pdf")
-    await writeFile(pdfPath, Buffer.from(await file.arrayBuffer()))
+    await mkdir(baseDir, { recursive: true })
 
-    // ===============================
-    // 3️⃣ LOAD PDF
-    // ===============================
-    const pdfBuffer = await readFile(pdfPath)
-    const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise
-
-    const images: ImageResult[] = []
-    const canvasFactory = new NodeCanvasFactory()
+    const inputPath = path.join(baseDir, "input.pdf")
+    const outputPattern = path.join(baseDir, "page-%03d.png")
 
     // ===============================
-    // 4️⃣ RENDER SETIAP HALAMAN
+    // 3️⃣ SIMPAN PDF
     // ===============================
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum)
-      const viewport = page.getViewport({ scale })
-
-      const { canvas } = canvasFactory.create(
-        Math.floor(viewport.width),
-        Math.floor(viewport.height)
+    const buffer = Buffer.from(await file.arrayBuffer())
+    if (!buffer.length) {
+      return NextResponse.json(
+        { success: false, message: "Uploaded PDF is empty" },
+        { status: 400 }
       )
+    }
 
-      // ⚠️ cast any = SOLUSI RESMI (typing pdfjs rusak)
-      await (page.render as any)({
-        viewport,
-        canvasFactory,
-      }).promise
+    await writeFile(inputPath, buffer)
 
-      images.push({
-        name: `page-${String(pageNum).padStart(3, "0")}.png`,
-        base64: canvas.toBuffer("image/png").toString("base64"),
-      })
+    // ===============================
+    // 4️⃣ JALANKAN GHOSTSCRIPT
+    // ===============================
+    const command = [
+      "gs",
+      "-dBATCH",
+      "-dNOPAUSE",
+      "-dSAFER",
+      "-dUseCropBox",
+      "-sDEVICE=png16m",
+      `-r${dpi}`,
+      `-sOutputFile=${outputPattern}`,
+      inputPath,
+    ].join(" ")
+
+    try {
+      await execAsync(command)
+    } catch (err) {
+      console.error("Ghostscript not available:", err)
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "PDF conversion engine not available on this server (Ghostscript missing).",
+        },
+        { status: 500 }
+      )
     }
 
     // ===============================
-    // 5️⃣ RESPONSE
+    // 5️⃣ AMBIL HASIL
     // ===============================
+    const files = (await readdir(baseDir))
+      .filter((f) => f.endsWith(".png"))
+      .sort()
+
+    if (!files.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "PDF tidak bisa dikonversi. Biasanya karena PDF scan atau protected.",
+        },
+        { status: 422 }
+      )
+    }
+
+    const images = await Promise.all(
+      files.map(async (name) => ({
+        name,
+        base64: (await readFile(path.join(baseDir!, name))).toString("base64"),
+      }))
+    )
+
     return NextResponse.json({
       success: true,
       pageCount: images.length,
       images,
     })
 
-  } catch (err: any) {
-    console.error("PDF TO IMAGE ERROR:", err)
+  } catch (error: any) {
+    console.error("PDF TO IMAGE ERROR:", error)
     return NextResponse.json(
-      {
-        success: false,
-        message: err?.message || "PDF conversion failed",
-      },
+      { success: false, message: error?.message || "PDF conversion failed" },
       { status: 500 }
     )
+
   } finally {
-    if (workDir) {
-      await rm(workDir, { recursive: true, force: true }).catch(() => {})
+    if (baseDir) {
+      await rm(baseDir, { recursive: true, force: true }).catch(() => {})
     }
   }
 }

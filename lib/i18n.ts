@@ -43,7 +43,7 @@ export const translations = {
           "Generate articles, blog posts, ad copy, and more with SEO optimization built-in.",
       },
       tools: {
-        title: "Heroic Tools",
+        title: "HINAI Tech Tools",
         description:
           "PDF tools, image editors, text utilities - 15+ tools for everyday tasks.",
       },
@@ -60,7 +60,7 @@ export const translations = {
     },
     // Tools Section
     tools: {
-      title: "Heroic Tools",
+      title: "HINAI Tech Tools",
       subtitle: "Fast, free tools for everyday tasks",
       pdf: {
         merge: "Merge PDF",
@@ -298,7 +298,7 @@ export const translations = {
           "Buat artikel, blog, copy iklan, dan lainnya dengan optimasi SEO bawaan.",
       },
       tools: {
-        title: "Heroic Tools",
+        title: "HINAI Tech Tools",
         description:
           "PDF tools, editor gambar, utilitas teks - 15+ alat untuk tugas sehari-hari.",
       },
@@ -315,7 +315,7 @@ export const translations = {
     },
     // Tools Section
     tools: {
-      title: "Heroic Tools",
+      title: "HINAI Tech Tools",
       subtitle: "Alat cepat dan gratis untuk tugas sehari-hari",
       pdf: {
         merge: "Gabung PDF",

@@ -34,8 +34,8 @@ const faqs = [
     answer: "You can export your content in multiple formats including Markdown (.md), Microsoft Word (.docx), and plain text (.txt). The DOCX export includes proper formatting, headings, and your target keywords."
   },
   {
-    question: "How do the Heroic Tools work?",
-    answer: "Heroic Tools are specialized utilities for various tasks. Each tool has a specific function - from image compression to PDF merging. Simply upload your file or enter your text, adjust the settings, and click the action button to process."
+    question: "How do the HINAI Tech Tools work?",
+    answer: "HINAI Tech Tools are specialized utilities for various tasks. Each tool has a specific function - from image compression to PDF merging. Simply upload your file or enter your text, adjust the settings, and click the action button to process."
   },
   {
     question: "Is my data secure?",
@@ -47,7 +47,7 @@ const faqs = [
   },
   {
     question: "What's the difference between Free and Pro plans?",
-    answer: "Free users get 5 AI generations per day and access to basic tools. Pro users get unlimited generations, all 50+ Heroic Tools, export capabilities, SEO optimization features, and priority support."
+    answer: "Free users get 5 AI generations per day and access to basic tools. Pro users get unlimited generations, all 50+ HINAI Tech Tools, export capabilities, SEO optimization features, and priority support."
   }
 ]
 
