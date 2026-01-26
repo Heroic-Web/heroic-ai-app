@@ -6,18 +6,44 @@ import { useLanguage } from "@/lib/language-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Sparkles, ImageIcon, Palette, Shapes } from "lucide-react"
+import type { ReactNode } from "react"
+
+/* =========================
+ * TYPE YANG JELAS & AMAN
+ * ========================= */
+type DesignTool = {
+  title: string
+  description: string
+  icon: ReactNode
+  color: string
+  comingSoon: boolean
+  href?: string
+}
 
 export default function DesignPage() {
   const { t, locale } = useLanguage()
 
-  const designTools = [
+  /* =========================
+   * NORMALISASI TEXT (ANTI MERAH)
+   * ========================= */
+  const titleText: string =
+    locale === "en" ? "Design Tools" : "Alat Desain"
+
+  const descriptionText: string =
+    typeof t("features.design.description") === "string"
+      ? t("features.design.description")
+      : locale === "en"
+        ? "Explore powerful design tools to create, edit, and enhance your visuals."
+        : "Jelajahi alat desain canggih untuk membuat, mengedit, dan meningkatkan visual Anda."
+
+  const designTools: DesignTool[] = [
     {
       title: locale === "en" ? "AI Image Generator" : "Generator Gambar AI",
       description:
         locale === "en"
           ? "Create stunning images from text descriptions"
           : "Buat gambar menakjubkan dari deskripsi teks",
-      icon: Sparkles,
+      icon: <Sparkles className="h-7 w-7" />,
       color: "bg-purple-500/10 text-purple-500",
       href: "/dashboard/design/image-generator",
       comingSoon: false,
@@ -26,11 +52,12 @@ export default function DesignPage() {
       title: locale === "en" ? "Image Editor" : "Editor Gambar",
       description:
         locale === "en"
-          ? "Edit and enhance your images with AI"
-          : "Edit dan tingkatkan gambar dengan AI",
-      icon: ImageIcon,
+          ? "Edit images: rotate, resize, flip, and export"
+          : "Edit gambar: rotasi, resize, flip, dan export",
+      icon: <ImageIcon className="h-7 w-7" />,
       color: "bg-blue-500/10 text-blue-500",
-      comingSoon: true,
+      href: "/dashboard/design/image-editor",
+      comingSoon: false,
     },
     {
       title: locale === "en" ? "Brand Kit" : "Kit Merek",
@@ -38,7 +65,7 @@ export default function DesignPage() {
         locale === "en"
           ? "Manage your brand colors, fonts, and assets"
           : "Kelola warna, font, dan aset merek Anda",
-      icon: Palette,
+      icon: <Palette className="h-7 w-7" />,
       color: "bg-green-500/10 text-green-500",
       comingSoon: true,
     },
@@ -48,7 +75,7 @@ export default function DesignPage() {
         locale === "en"
           ? "Generate professional logos with AI"
           : "Buat logo profesional dengan AI",
-      icon: Shapes,
+      icon: <Shapes className="h-7 w-7" />,
       color: "bg-orange-500/10 text-orange-500",
       comingSoon: true,
     },
@@ -57,13 +84,12 @@ export default function DesignPage() {
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-6xl space-y-6">
-   
-        {/* DESCRIPTION (PINDAH KE SINI) */}
-        <p className="text-muted-foreground">
-          {t("features.design.description")}
-        </p>
 
-        {/* CONTENT */}
+        {/* ✅ HEADER — AMAN */}
+        <DashboardHeader
+          title={titleText}
+        />
+
         <div className="grid gap-6 md:grid-cols-2">
           {designTools.map((tool) => (
             <Card
@@ -84,7 +110,7 @@ export default function DesignPage() {
                 <div
                   className={`flex h-14 w-14 items-center justify-center rounded-xl ${tool.color}`}
                 >
-                  <tool.icon className="h-7 w-7" />
+                  {tool.icon}
                 </div>
 
                 <div>
@@ -94,13 +120,13 @@ export default function DesignPage() {
                   </p>
                 </div>
 
-                {tool.comingSoon ? (
+                {tool.comingSoon || !tool.href ? (
                   <Button disabled className="opacity-50">
                     {locale === "en" ? "Coming Soon" : "Segera Hadir"}
                   </Button>
                 ) : (
                   <Button asChild>
-                    <Link href={tool.href!}>
+                    <Link href={tool.href}>
                       {locale === "en" ? "Open Tool" : "Buka Tool"}
                     </Link>
                   </Button>
