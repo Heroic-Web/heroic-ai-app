@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next"
 
 import { LanguageProvider } from "@/lib/language-context"
 import { AuthProvider } from "@/lib/auth-context"
+import { NotificationProvider } from "@/lib/notification-context"
 import { Providers } from "./providers"
 
 import "./globals.css"
@@ -77,10 +78,13 @@ export const viewport: Viewport = {
 
 /* ================= ROOT LAYOUT ================= */
 /**
- * ⚠️ RULE KERAS:
+ * ⚠️ RULE KERAS (DIPERTAHANKAN):
  * - JANGAN render Navbar di sini
  * - JANGAN render DashboardHeader di sini
  * - Layout ini HARUS NETRAL
+ *
+ * ✅ Provider GLOBAL diletakkan di sini
+ * ✅ Semua halaman & tools ikut provider yang sama
  */
 export default function RootLayout({
   children,
@@ -92,14 +96,18 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
       >
+        {/* ================= GLOBAL PROVIDERS ================= */}
         <Providers>
           <AuthProvider>
             <LanguageProvider>
-              {children}
+              <NotificationProvider>
+                {children}
+              </NotificationProvider>
             </LanguageProvider>
           </AuthProvider>
         </Providers>
 
+        {/* ================= ANALYTICS ================= */}
         <Analytics />
       </body>
     </html>

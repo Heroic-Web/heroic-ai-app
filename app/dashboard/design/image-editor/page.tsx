@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
+import { useNotifications } from '@/lib/notification-context'
 
 /* ===============================
  * TYPE
@@ -140,7 +141,7 @@ const TEXT: Record<Lang, any> = {
  * =============================== */
 export default function ImageEditorPage() {
   const fileRef = useRef<HTMLInputElement>(null)
-
+  const { addNotification } = useNotifications()
   const [lang, setLang] = useState<Lang>('id')
   const t = TEXT[lang]
 
@@ -209,21 +210,6 @@ export default function ImageEditorPage() {
   /* ===============================
    * APPLY SERVER
    * =============================== */
-  const applyEdit = async () => {
-    if (!file) return
-    setLoading(true)
-
-    const form = new FormData()
-    form.append('file', file)
-    Object.entries(edit).forEach(([k, v]) => form.append(k, String(v)))
-
-    const res = await fetch('/api/image-editor', { method: 'POST', body: form })
-    const blob = await res.blob()
-    setPreview(URL.createObjectURL(blob))
-    setHistory((h) => [...h, edit])
-    setLoading(false)
-  }
-
   const downloadImage = () => {
     if (!preview) return
     const a = document.createElement('a')
@@ -242,6 +228,35 @@ export default function ImageEditorPage() {
   const [activePreset, setActivePreset] = useState<
     'soft' | 'vivid' | 'bw' | 'quick' | null
     >(null)
+
+  const applyEdit = async () => {
+    if (!file) return
+    setLoading(true)
+
+    const form = new FormData()
+    form.append('file', file)
+    Object.entries(edit).forEach(([k, v]) =>
+        form.append(k, String(v))
+    )
+
+    await fetch('/api/image-editor', {
+        method: 'POST',
+        body: form,
+    })
+
+    // ✅ BARU DITAMBAHKAN (NOTIFIKASI)
+    addNotification({
+        title: 'Image Edited',
+        message:
+        lang === 'en'
+            ? 'You successfully edited an image using Image Editor.'
+            : 'Anda berhasil mengedit gambar menggunakan Image Editor.',
+        type: 'tool',
+    })
+
+    setHistory((h) => [...h, edit])
+    setLoading(false)
+    }
 
  /* ===============================
  * UI (FULL FIX & CONNECTED)
