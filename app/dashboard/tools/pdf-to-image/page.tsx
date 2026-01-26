@@ -21,6 +21,17 @@ import {
   AlertCircle,
 } from "lucide-react"
 
+interface ApiImage {
+  name: string
+  base64: string
+}
+
+interface ApiResponse {
+  success: boolean
+  message?: string
+  images?: ApiImage[]
+}
+
 export default function PdfToImagePage() {
   const { t } = useLanguage()
 
@@ -36,30 +47,30 @@ export default function PdfToImagePage() {
    * FILE INPUT
    * ============================= */
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const droppedFile = e.dataTransfer.files[0]
 
-    if (droppedFile && droppedFile.type === "application/pdf") {
+    if (droppedFile?.type === "application/pdf") {
       setFile(droppedFile)
       setImages([])
       setConverted(false)
       setError("")
     } else {
-      setError("Please upload a PDF file")
+      setError("Please upload a valid PDF file.")
     }
   }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
 
-    if (selectedFile && selectedFile.type === "application/pdf") {
+    if (selectedFile?.type === "application/pdf") {
       setFile(selectedFile)
       setImages([])
       setConverted(false)
       setError("")
     } else {
-      setError("Please upload a PDF file")
+      setError("Please upload a valid PDF file.")
     }
   }
 
@@ -71,82 +82,52 @@ export default function PdfToImagePage() {
   }
 
   /* =============================
-   * CONVERT (CALL API)
+   * CONVERT
    * ============================= */
 
   const handleConvert = async () => {
     if (!file) return
 
-    // =============================
-    // RESET STATE
-    // =============================
     setIsConverting(true)
     setError("")
     setImages([])
     setConverted(false)
 
     try {
-      // =============================
-      // BUILD FORM DATA
-      // =============================
       const formData = new FormData()
       formData.append("file", file)
       formData.append("quality", quality)
 
-      // =============================
-      // CALL API
-      // =============================
       const res = await fetch("/api/pdf-to-image", {
         method: "POST",
         body: formData,
       })
 
-      /**
-       * ⛔ PENTING (Next.js 16 + Turbopack)
-       * Kalau API error / crash,
-       * DEV server mengirim HTML overlay, BUKAN JSON
-       */
       const contentType = res.headers.get("content-type") || ""
 
-      // =============================
-      // HANDLE NON-JSON RESPONSE
-      // =============================
       if (!contentType.includes("application/json")) {
-        const text = await res.text()
-        console.error("NON-JSON RESPONSE FROM SERVER:", text)
-
-        throw new Error(
-          "Server error occurred while converting PDF. Please try again."
-        )
+        throw new Error("Server error occurred.")
       }
 
-      // =============================
-      // SAFE JSON PARSE
-      // =============================
-      const data = await res.json()
+      const data: ApiResponse = await res.json()
 
-      // =============================
-      // HANDLE API ERROR
-      // =============================
-      if (!res.ok || data?.success === false) {
-        throw new Error(data?.message || "PDF conversion failed")
+      if (!data.success) {
+        throw new Error(data.message || "PDF conversion failed.")
       }
 
-      // =============================
-      // VALIDATE IMAGE DATA
-      // =============================
-      if (!Array.isArray(data.images) || data.images.length === 0) {
-        throw new Error("No images were generated from the PDF")
+      if (!data.images || data.images.length === 0) {
+        throw new Error("No images generated.")
       }
 
-      // =============================
-      // SUCCESS
-      // =============================
-      setImages(data.images.map((img: any) => img.base64))
+      setImages(data.images.map((img) => img.base64))
       setConverted(true)
-    } catch (err: any) {
-      console.error("UI PDF CONVERT ERROR:", err)
-      setError(err?.message || "Failed to convert PDF")
+    } catch (err) {
+      console.error("UI PDF ERROR:", err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to convert PDF."
+      )
     } finally {
       setIsConverting(false)
     }
@@ -173,7 +154,6 @@ export default function PdfToImagePage() {
       description="Convert PDF pages to high-quality images"
     >
       <div className="grid gap-6 lg:grid-cols-2">
-
         {/* LEFT */}
         <div className="space-y-4">
           {!file ? (
@@ -214,11 +194,7 @@ export default function PdfToImagePage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRemove}
-                >
+                <Button variant="ghost" size="icon" onClick={handleRemove}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </CardContent>
@@ -267,9 +243,7 @@ export default function PdfToImagePage() {
             disabled={!file || isConverting}
             className="w-full"
           >
-            {isConverting
-              ? "Converting..."
-              : `Convert to ${format.toUpperCase()}`}
+            {isConverting ? "Converting..." : `Convert to ${format.toUpperCase()}`}
           </Button>
         </div>
 

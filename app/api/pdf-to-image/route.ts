@@ -6,17 +6,29 @@ import os from "os"
 import { exec } from "child_process"
 import { promisify } from "util"
 
-export const runtime = "nodejs" // wajib
+export const runtime = "nodejs"
 
 const execAsync = promisify(exec)
+
+/* =============================
+ * UTIL: CHECK GHOSTSCRIPT
+ * ============================= */
+async function isGhostscriptAvailable(): Promise<boolean> {
+  try {
+    await execAsync("gs --version")
+    return true
+  } catch {
+    return false
+  }
+}
 
 export async function POST(req: Request) {
   let baseDir: string | null = null
 
   try {
-    // ===============================
-    // 1️⃣ PARSE FORM DATA
-    // ===============================
+    /* =============================
+     * 1️⃣ PARSE FORM DATA
+     * ============================= */
     const formData = await req.formData()
     const file = formData.get("file")
 
@@ -27,20 +39,31 @@ export async function POST(req: Request) {
       )
     }
 
-    const quality = ["high", "medium", "low"].includes(
-      String(formData.get("quality"))
-    )
-      ? String(formData.get("quality"))
-      : "high"
+    const qualityRaw = String(formData.get("quality") || "high")
+    const quality =
+      qualityRaw === "medium" || qualityRaw === "low" ? qualityRaw : "high"
 
-    const dpi =
-      quality === "high" ? 300 :
-      quality === "medium" ? 150 :
-      72
+    const dpi = quality === "high" ? 300 : quality === "medium" ? 150 : 72
 
-    // ===============================
-    // 2️⃣ FOLDER TEMP (SERVERLESS SAFE)
-    // ===============================
+    /* =============================
+     * 2️⃣ CHECK GHOSTSCRIPT
+     * ============================= */
+    const hasGhostscript = await isGhostscriptAvailable()
+
+    if (!hasGhostscript) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Fitur PDF to Image belum tersedia di server ini. Silakan hubungi administrator.",
+        },
+        { status: 200 }
+      )
+    }
+
+    /* =============================
+     * 3️⃣ TEMP DIRECTORY
+     * ============================= */
     const requestId = crypto.randomUUID()
     baseDir = path.join(os.tmpdir(), "pdf-to-image", requestId)
 
@@ -49,10 +72,11 @@ export async function POST(req: Request) {
     const inputPath = path.join(baseDir, "input.pdf")
     const outputPattern = path.join(baseDir, "page-%03d.png")
 
-    // ===============================
-    // 3️⃣ SIMPAN PDF
-    // ===============================
+    /* =============================
+     * 4️⃣ SAVE PDF
+     * ============================= */
     const buffer = Buffer.from(await file.arrayBuffer())
+
     if (!buffer.length) {
       return NextResponse.json(
         { success: false, message: "Uploaded PDF is empty" },
@@ -62,9 +86,9 @@ export async function POST(req: Request) {
 
     await writeFile(inputPath, buffer)
 
-    // ===============================
-    // 4️⃣ JALANKAN GHOSTSCRIPT
-    // ===============================
+    /* =============================
+     * 5️⃣ CONVERT PDF → IMAGE
+     * ============================= */
     const command = [
       "gs",
       "-dBATCH",
@@ -74,26 +98,26 @@ export async function POST(req: Request) {
       "-sDEVICE=png16m",
       `-r${dpi}`,
       `-sOutputFile=${outputPattern}`,
-      inputPath,
+      `"${inputPath}"`,
     ].join(" ")
 
     try {
       await execAsync(command)
     } catch (err) {
-      console.error("Ghostscript not available:", err)
+      console.error("GHOSTSCRIPT EXEC ERROR:", err)
       return NextResponse.json(
         {
           success: false,
           message:
-            "PDF conversion engine not available on this server (Ghostscript missing).",
+            "PDF tidak dapat dikonversi. File mungkin rusak, terenkripsi, atau tidak didukung.",
         },
-        { status: 500 }
+        { status: 200 }
       )
     }
 
-    // ===============================
-    // 5️⃣ AMBIL HASIL
-    // ===============================
+    /* =============================
+     * 6️⃣ READ OUTPUT IMAGES
+     * ============================= */
     const files = (await readdir(baseDir))
       .filter((f) => f.endsWith(".png"))
       .sort()
@@ -103,9 +127,9 @@ export async function POST(req: Request) {
         {
           success: false,
           message:
-            "PDF tidak bisa dikonversi. Biasanya karena PDF scan atau protected.",
+            "Tidak ada halaman yang berhasil dikonversi dari PDF ini.",
         },
-        { status: 422 }
+        { status: 200 }
       )
     }
 
@@ -116,19 +140,23 @@ export async function POST(req: Request) {
       }))
     )
 
+    /* =============================
+     * 7️⃣ SUCCESS RESPONSE
+     * ============================= */
     return NextResponse.json({
       success: true,
       pageCount: images.length,
       images,
     })
-
-  } catch (error: any) {
-    console.error("PDF TO IMAGE ERROR:", error)
+  } catch (error) {
+    console.error("PDF TO IMAGE FATAL ERROR:", error)
     return NextResponse.json(
-      { success: false, message: error?.message || "PDF conversion failed" },
-      { status: 500 }
+      {
+        success: false,
+        message: "Terjadi kesalahan saat memproses PDF.",
+      },
+      { status: 200 }
     )
-
   } finally {
     if (baseDir) {
       await rm(baseDir, { recursive: true, force: true }).catch(() => {})
