@@ -4,12 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import SpeechToTextClient from "./speech-to-text.client"
 
-type GateState =
-  | "loading"
-  | "allowed"
-  | "login"
-  | "pay_required"
-  | "error"
+type GateState = "loading" | "allowed" | "login" | "pay_required" | "error"
 
 export default function SpeechToTextGate() {
   const router = useRouter()
@@ -18,13 +13,10 @@ export default function SpeechToTextGate() {
   useEffect(() => {
     async function checkAccess() {
       try {
-        const res = await fetch("/api/speech-to-text/access", {
-          cache: "no-store",
-        })
-
-        if (!res.ok) throw new Error("Request failed")
-
+        const res = await fetch("/api/speech-to-text/access")
         const data = await res.json()
+
+        if (!res.ok) throw new Error()
 
         if (!data.user) {
           setState("login")
@@ -33,8 +25,7 @@ export default function SpeechToTextGate() {
         } else {
           setState("allowed")
         }
-      } catch (err) {
-        console.error(err)
+      } catch {
         setState("error")
       }
     }
@@ -56,11 +47,7 @@ export default function SpeechToTextGate() {
 
   // ❌ error
   if (state === "error") {
-    return (
-      <div className="p-6 text-red-600">
-        Gagal memverifikasi akses
-      </div>
-    )
+    return <div className="p-6 text-red-600">Gagal memverifikasi akses</div>
   }
 
   // ⏳ loading

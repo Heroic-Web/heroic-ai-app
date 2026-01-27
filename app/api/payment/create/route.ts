@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+export const runtime = "nodejs" // ⬅️ WAJIB untuk Prisma
+
 /**
  * CREATE PAYMENT INTENT (DEV SAFE)
  * - Auto-create demo user jika belum ada
- * - Tidak pakai Midtrans dulu
+ * - Simulasi pembayaran sukses
  */
-export async function POST() {
+export async function POST(_req: Request) {
   try {
     /* ============================
      * 1️⃣ PASTIKAN USER ADA
@@ -24,26 +26,26 @@ export async function POST() {
     })
 
     /* ============================
-     * 2️⃣ BUAT ORDER
+     * 2️⃣ BUAT ORDER ID
      * ============================ */
     const orderId = `STT-${Date.now()}`
 
     /* ============================
-     * 3️⃣ SIMPAN PAYMENT (VALID)
+     * 3️⃣ SIMPAN PAYMENT
      * ============================ */
     await prisma.payment.create({
-        data: {
-            userId: user.id,
-            orderId,
-            amount: 99000,
-            currency: "IDR",
-            product: "speech-to-text",
-            status: "PAID", 
-        },
-        })
+      data: {
+        userId: user.id,
+        orderId,
+        amount: 99000,
+        currency: "IDR",
+        product: "speech-to-text",
+        status: "PAID", // dev-mode
+      },
+    })
 
     /* ============================
-     * 4️⃣ RESPONSE
+     * 4️⃣ RESPONSE (VALID JSON)
      * ============================ */
     return NextResponse.json({
       success: true,

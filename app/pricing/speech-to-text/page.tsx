@@ -1,9 +1,17 @@
 "use client"
 
+import { Suspense, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useState } from "react"
 
-export default function SpeechToTextPricingPage() {
+/* ======================================================
+ * 🔒 WAJIB: Cegah prerender build-time
+ * ====================================================== */
+export const dynamic = "force-dynamic"
+
+/* ======================================================
+ * 🔹 INNER COMPONENT (boleh pakai useSearchParams)
+ * ====================================================== */
+function SpeechToTextContent() {
   const params = useSearchParams()
   const router = useRouter()
   const alert = params.get("alert")
@@ -16,39 +24,39 @@ export default function SpeechToTextPricingPage() {
     setError(null)
 
     try {
-        const res = await fetch("/api/payment/create", {
+      const res = await fetch("/api/payment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        })
+      })
 
-        const text = await res.text()
-        let data: any = {}
+      const text = await res.text()
+      let data: any = {}
 
-        try {
+      try {
         data = JSON.parse(text)
-        } catch {}
+      } catch {
+        throw new Error("Invalid server response")
+      }
 
-        // ❗ jangan cuma res.ok
-        if (!res.ok || !data.redirectUrl) {
+      if (!res.ok || !data.redirectUrl) {
         throw new Error("Payment failed")
-        }
+      }
 
-        window.location.href = data.redirectUrl
+      window.location.href = data.redirectUrl
     } catch (err) {
-        console.error(err)
-        setError("Gagal memulai pembayaran")
+      console.error(err)
+      setError("Gagal memulai pembayaran")
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
-    }
+  }
 
   return (
     <div className="mx-auto max-w-xl p-6">
       {/* ALERT */}
       {alert === "pay_required" && (
         <div className="mb-4 rounded-md bg-red-100 p-3 text-red-700">
-          ⚠️ Untuk menggunakan tools ini, silakan lakukan pembayaran terlebih
-          dahulu.
+          ⚠️ Untuk menggunakan tools ini, silakan lakukan pembayaran terlebih dahulu.
         </div>
       )}
 
@@ -59,13 +67,10 @@ export default function SpeechToTextPricingPage() {
         </div>
       )}
 
-      <h1 className="text-2xl font-bold">
-        🎙️ Speech to Text (PRO)
-      </h1>
+      <h1 className="text-2xl font-bold">🎙️ Speech to Text (PRO)</h1>
 
       <p className="mt-2 text-muted-foreground">
-        Transkripsikan audio menjadi teks dengan cepat, akurat, dan bisa langsung
-        diedit.
+        Transkripsikan audio menjadi teks dengan cepat, akurat, dan bisa langsung diedit.
       </p>
 
       <ul className="mt-4 list-disc space-y-1 pl-5">
@@ -90,5 +95,26 @@ export default function SpeechToTextPricingPage() {
         Kembali ke Dashboard
       </button>
     </div>
+  )
+}
+
+/* ======================================================
+ * 🔹 PAGE EXPORT (Suspense HARUS di sini)
+ * ====================================================== */
+export default function SpeechToTextPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-xl p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 w-1/2 rounded bg-gray-200" />
+            <div className="h-4 w-full rounded bg-gray-200" />
+            <div className="h-4 w-5/6 rounded bg-gray-200" />
+          </div>
+        </div>
+      }
+    >
+      <SpeechToTextContent />
+    </Suspense>
   )
 }
