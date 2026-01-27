@@ -2,6 +2,14 @@
   "name": "heroic-ai-studio",
   "version": "0.1.0",
   "private": true,
+
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "sharp"
+    ]
+  },
+
   "scripts": {
     "dev": "next dev",
     "build": "next build",
