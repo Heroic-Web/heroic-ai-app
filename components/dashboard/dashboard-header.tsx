@@ -5,82 +5,119 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { LanguageSwitcher } from "@/components/language-switcher"
-import { Bell, Search, AlertTriangle, CheckCircle2, Info, X } from "lucide-react"
+import {
+  Bell,
+  Search,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  X,
+  Mic,
+  LogIn,
+  CreditCard,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/lib/language-context"
-import { Badge } from "@/components/ui/badge"
 import clsx from "clsx"
 
 /* ================= TYPES ================= */
-type NotificationType = "warning" | "info" | "success"
+type NotificationType = "warning" | "info" | "success" | "error"
 
 type Notification = {
   id: number
   title: string
   message: string
   type: NotificationType
+  activity: string
   read: boolean
   time: string
 }
 
-interface DashboardHeaderProps {
-  title?: string
-}
+/* ================= CONFIG ================= */
+const POLLING_INTERVAL = 90_000 // 90 detik
+const NOTIF_INTERVAL = 60_000   // 1 menit per notif
 
 /* ================= COMPONENT ================= */
-export function DashboardHeader({ title }: DashboardHeaderProps) {
+export function DashboardHeader({ title }: { title?: string }) {
   const { t, locale } = useLanguage()
+
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
+
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  /* ================= MOCK REALTIME NOTIFICATION ================= */
+  /** 🔐 ID notif yang sudah pernah tampil */
+  const knownIdsRef = useRef<Set<number>>(new Set())
+
+  /** 📥 queue internal */
+  const queueRef = useRef<Notification[]>([])
+  const isProcessingRef = useRef(false)
+
+  /* ======================================================
+    FETCH DARI API (TIDAK LANGSUNG RENDER)
+  ====================================================== */
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" })
+      if (!res.ok) return
+
+      const data: Notification[] = await res.json()
+
+      const fresh = data.filter((n) => !knownIdsRef.current.has(n.id))
+
+      if (fresh.length > 0) {
+        queueRef.current.push(...fresh)
+        processQueue()
+      }
+    } catch (e) {
+      console.error("notif error", e)
+    }
+  }
+
+  /* ======================================================
+    PROSES QUEUE SATU-SATU (ANTI SPAM)
+  ====================================================== */
+  const processQueue = () => {
+    if (isProcessingRef.current) return
+    if (queueRef.current.length === 0) return
+
+    isProcessingRef.current = true
+
+    const next = queueRef.current.shift()
+    if (!next) {
+      isProcessingRef.current = false
+      return
+    }
+
+    knownIdsRef.current.add(next.id)
+
+    setNotifications((prev) => [
+      {
+        ...next,
+        read: false,
+        time: locale === "en" ? "Just now" : "Baru saja",
+      },
+      ...prev,
+    ])
+
+    setTimeout(() => {
+      isProcessingRef.current = false
+      processQueue()
+    }, NOTIF_INTERVAL)
+  }
+
+  /* ======================================================
+    INIT & POLLING
+  ====================================================== */
   useEffect(() => {
-    const interval = setInterval(() => {
-      const samples: Omit<Notification, "id" | "read" | "time">[] = [
-        {
-          title: locale === "en" ? "Free plan almost used" : "Paket gratis hampir habis",
-          message:
-            locale === "en"
-              ? "You have used 90% of your free quota."
-              : "Kamu sudah memakai 90% kuota gratis.",
-          type: "warning",
-        },
-        {
-          title: locale === "en" ? "Workflow completed" : "Workflow selesai",
-          message:
-            locale === "en"
-              ? "Your SEO workflow finished successfully."
-              : "Workflow SEO kamu berhasil dijalankan.",
-          type: "success",
-        },
-        {
-          title: locale === "en" ? "New feature available" : "Fitur baru tersedia",
-          message:
-            locale === "en"
-              ? "AI Workflow Builder is now live."
-              : "AI Workflow Builder sudah tersedia.",
-          type: "info",
-        },
-      ]
-
-      const random = samples[Math.floor(Math.random() * samples.length)]
-
-      setNotifications((prev) => [
-        {
-          id: Date.now(),
-          ...random,
-          read: false,
-          time: locale === "en" ? "Just now" : "Baru saja",
-        },
-        ...prev,
-      ])
-    }, 20000) // tiap 20 detik
-
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, POLLING_INTERVAL)
     return () => clearInterval(interval)
   }, [locale])
 
-  /* ================= CLICK OUTSIDE ================= */
+  /* ======================================================
+    CLICK OUTSIDE
+  ====================================================== */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -91,7 +128,9 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  /* ================= ACTIONS ================= */
+  /* ======================================================
+    ACTIONS
+  ====================================================== */
   const unreadCount = notifications.filter((n) => !n.read).length
 
   const markAllRead = () => {
@@ -102,17 +141,26 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
 
-  const iconByType = (type: NotificationType) => {
-    switch (type) {
-      case "warning":
+  const iconByActivity = (activity: string) => {
+    switch (activity) {
+      case "quota":
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />
-      case "success":
+      case "workflow":
         return <CheckCircle2 className="h-4 w-4 text-green-500" />
+      case "speech-to-text":
+        return <Mic className="h-4 w-4 text-purple-500" />
+      case "auth":
+        return <LogIn className="h-4 w-4 text-blue-500" />
+      case "payment":
+        return <CreditCard className="h-4 w-4 text-emerald-500" />
       default:
-        return <Info className="h-4 w-4 text-blue-500" />
+        return <Info className="h-4 w-4 text-muted-foreground" />
     }
   }
 
+  /* ======================================================
+    UI
+  ====================================================== */
   return (
     <header className="sticky top-0 z-[60] flex h-16 items-center gap-2 border-b bg-white px-4">
       <SidebarTrigger className="-ml-1" />
@@ -124,23 +172,15 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
         {/* Search */}
         <div className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder={`${t("common.search")}...`}
-            className="w-64 pl-9 bg-white"
-          />
+          <Input placeholder={`${t("common.search")}...`} className="w-64 pl-9" />
         </div>
 
-        {/* NOTIFICATIONS */}
+        {/* NOTIF */}
         <div className="relative" ref={dropdownRef}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Notifications"
-          >
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -148,21 +188,17 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
 
           {open && (
             <div className="absolute right-0 mt-2 w-96 rounded-xl border bg-white shadow-lg">
-              <div className="flex items-center justify-between px-4 py-3 border-b">
-                <p className="font-semibold">
-                  {locale === "en" ? "Notifications" : "Notifikasi"}
-                </p>
-                <Button variant="ghost" size="sm" onClick={markAllRead}>
-                  {locale === "en" ? "Mark all read" : "Tandai semua"}
+              <div className="flex justify-between px-4 py-3 border-b">
+                <p className="font-semibold">Notifications</p>
+                <Button size="sm" variant="ghost" onClick={markAllRead}>
+                  Mark all read
                 </Button>
               </div>
 
               <div className="max-h-96 overflow-auto">
                 {notifications.length === 0 && (
                   <p className="p-4 text-sm text-muted-foreground text-center">
-                    {locale === "en"
-                      ? "No notifications"
-                      : "Tidak ada notifikasi"}
+                    No notifications
                   </p>
                 )}
 
@@ -170,11 +206,11 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
                   <div
                     key={n.id}
                     className={clsx(
-                      "flex gap-3 px-4 py-3 border-b hover:bg-secondary/50",
+                      "flex gap-3 px-4 py-3 border-b",
                       !n.read && "bg-secondary/30",
                     )}
                   >
-                    {iconByType(n.type)}
+                    {iconByActivity(n.activity)}
 
                     <div className="flex-1">
                       <p className="font-medium text-sm">{n.title}</p>
@@ -185,7 +221,7 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
                     </div>
 
                     <button onClick={() => removeNotification(n.id)}>
-                      <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                      <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </div>
                 ))}
@@ -194,7 +230,6 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
           )}
         </div>
 
-        {/* Language */}
         <LanguageSwitcher />
       </div>
     </header>
