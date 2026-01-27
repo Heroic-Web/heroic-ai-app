@@ -23,10 +23,12 @@ import {
   LucideIcon,
   Rocket,
   Star,
+  Mic,      
+  Lock,    
 } from 'lucide-react'
 
 /* ======================
-   TYPES (ANTI MERAH)
+   TYPES
 ====================== */
 
 type QuickAction = {
@@ -35,6 +37,7 @@ type QuickAction = {
   icon: LucideIcon
   href: string
   color: string
+  badge?: 'PRO' 
 }
 
 type RecentProject = {
@@ -82,6 +85,15 @@ export default function DashboardPage() {
       href: '/dashboard/tools',
       color: 'bg-green-500/10 text-green-500',
     },
+    {
+      title: 'Speech to Text Notes',
+      description:
+        'Convert audio into editable text with realtime transcription and smart notes.',
+      icon: Mic,
+      href: '/dashboard/speech-to-text',
+      color: 'bg-orange-500/10 text-orange-500',
+      badge: 'PRO',
+    },
   ]
 
   /* ======================
@@ -109,6 +121,13 @@ export default function DashboardPage() {
       type: 'Copywriting',
       updatedAt: '1 day ago',
       icon: FileIcon,
+    },
+    {
+      id: 4,
+      title: 'Meeting Notes Transcription',
+      type: 'Speech to Text (PRO)',
+      updatedAt: '1 day ago',
+      icon: Mic,
     },
   ]
 
@@ -177,10 +196,17 @@ export default function DashboardPage() {
             {t('dashboard.quickActions')}
           </h3>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action) => (
               <Link key={action.title} href={action.href}>
                 <Card className="group cursor-pointer transition hover:border-heroic-blue/50 hover:bg-secondary/50">
+                {action.badge === 'PRO' && (
+                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black px-2 py-0.5 text-xs text-white">
+                      <Lock className="h-3 w-3" />
+                      PRO
+                    </div>
+                  )}
+                  
                   <CardContent className="flex items-center gap-4 p-6">
                     <div
                       className={`flex h-12 w-12 items-center justify-center rounded-xl ${action.color}`}

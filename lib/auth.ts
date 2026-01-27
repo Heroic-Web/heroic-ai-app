@@ -1,4 +1,4 @@
-import 'server-only'
+import "server-only"
 
 export type CurrentUser = {
   id: string
@@ -9,10 +9,18 @@ export type CurrentUser = {
 /* ================================
    DUMMY AUTH (NO DATABASE)
 ================================ */
-export async function getCurrentUser(): Promise<CurrentUser> {
+export async function getCurrentUser(): Promise<CurrentUser | null> {
   return {
-    id: 'demo-user',
-    name: 'Demo User',
-    email: 'demo@example.com',
+    id: "demo-user",
+    name: "Demo User",
+    email: "demo@example.com",
   }
+}
+
+/* ================================
+   ALIAS (UNTUK KOMPATIBILITAS)
+   👉 INI YANG DIPAKAI PAGE.TSX
+================================ */
+export async function getUser(): Promise<CurrentUser | null> {
+  return getCurrentUser()
 }
