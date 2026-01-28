@@ -11,16 +11,16 @@ export default function SpeechToTextGate() {
   const [state, setState] = useState<State>("checking")
 
   useEffect(() => {
-    let active = true
+    let alive = true
 
-    async function run() {
+    async function check() {
       try {
         const res = await fetch("/api/speech-to-text/access", {
           cache: "no-store",
         })
         const data = await res.json()
 
-        if (!active) return
+        if (!alive) return
 
         if (!data.user) {
           setState("login")
@@ -38,9 +38,9 @@ export default function SpeechToTextGate() {
       }
     }
 
-    run()
+    check()
     return () => {
-      active = false
+      alive = false
     }
   }, [])
 
@@ -54,7 +54,7 @@ export default function SpeechToTextGate() {
   }, [state, router])
 
   if (state === "checking") {
-    return <div className="p-6">Memverifikasi akses...</div>
+    return <div className="p-6">Memverifikasi akses…</div>
   }
 
   if (state === "allowed") {
