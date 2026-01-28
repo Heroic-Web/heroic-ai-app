@@ -1,88 +1,51 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import SpeechToTextClient from "./speech-to-text.client"
+import { useAuth } from "@/lib/auth-context"
 
 type GateState = "checking" | "allowed" | "login" | "pay"
 
 export default function SpeechToTextPage() {
   const router = useRouter()
-  const pathname = usePathname()
-
+  const { user, isLoading } = useAuth()
   const [state, setState] = useState<GateState>("checking")
-  const redirected = useRef(false) // ⛔ cegah redirect berulang
 
   /* ============================
-   * 1️⃣ CEK AKSES (API)
+   * 1️⃣ CEK LOGIN (CLIENT SIDE)
    * ============================ */
   useEffect(() => {
-    let alive = true
+    if (isLoading) return
 
-    async function checkAccess() {
-      try {
-        const res = await fetch("/api/speech-to-text/access", {
-          cache: "no-store",
-        })
-
-        const data = await res.json()
-
-        if (!alive) return
-
-        if (!data?.user) {
-          setState("login")
-          return
-        }
-
-        if (!data?.hasAccess) {
-          setState("pay")
-          return
-        }
-
-        setState("allowed")
-      } catch (err) {
-        console.error("ACCESS CHECK ERROR:", err)
-        setState("login")
-      }
+    if (!user) {
+      setState("login")
+      return
     }
 
-    checkAccess()
-
-    return () => {
-      alive = false
-    }
-  }, [])
+    // 🔓 SEMENTARA: anggap user sudah punya akses
+    // nanti bisa disambungkan ke DB / payment
+    setState("allowed")
+  }, [user, isLoading])
 
   /* ============================
-   * 2️⃣ REDIRECT (AMAN & TERKONTROL)
+   * 2️⃣ REDIRECT (STABIL)
    * ============================ */
   useEffect(() => {
-    if (redirected.current) return
-
-    // belum login
-    if (state === "login" && pathname !== "/login") {
-      redirected.current = true
+    if (state === "login") {
       router.replace("/login")
-      return
     }
 
-    // belum bayar
-    if (
-      state === "pay" &&
-      !pathname.startsWith("/pricing/speech-to-text")
-    ) {
-      redirected.current = true
+    if (state === "pay") {
       router.replace("/pricing/speech-to-text?alert=pay_required")
-      return
     }
-  }, [state, pathname, router])
+  }, [state, router])
 
   /* ============================
    * 3️⃣ RENDER
    * ============================ */
 
-  // loading
-  if (state === "checking") {
+  if (state === "checking" || isLoading) {
     return (
       <div className="p-6 text-sm text-muted-foreground">
         Memverifikasi akses…
@@ -90,11 +53,9 @@ export default function SpeechToTextPage() {
     )
   }
 
-  // ✅ AKSES VALID → HALAMAN STT MUNCUL
   if (state === "allowed") {
     return <SpeechToTextClient />
   }
 
-  // redirect sedang berlangsung
   return null
 }
