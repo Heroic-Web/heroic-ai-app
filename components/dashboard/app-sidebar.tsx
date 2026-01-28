@@ -38,6 +38,7 @@ import {
   User,
   CreditCard,
   Sparkles,
+  Mic, // 🎙️ tambahkan icon
 } from "lucide-react"
 
 export function AppSidebar() {
@@ -46,10 +47,22 @@ export function AppSidebar() {
   const { t } = useLanguage()
   const { user, logout } = useAuth()
 
+  /** 🔑 helper: aktif untuk route turunan */
+  const isActive = (url: string) =>
+    pathname === url || pathname.startsWith(url + "/")
+
   const mainNavItems = [
     { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
     { title: t("writer.title"), url: "/dashboard/writer", icon: FileText },
     { title: t("tools.title"), url: "/dashboard/tools", icon: Wrench },
+
+    // ✅ Speech To Text DITAMBAHKAN RESMI
+    {
+      title: "Speech To Text Notes",
+      url: "/dashboard/speech-to-text",
+      icon: Mic,
+    },
+
     { title: t("features.design.title"), url: "/dashboard/design", icon: Palette },
     { title: t("features.workflow.title"), url: "/dashboard/workflow", icon: Workflow },
   ]
@@ -73,7 +86,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="bg-background">
-      {/* ===== Sidebar Header (SOLID) ===== */}
+      {/* ===== Sidebar Header ===== */}
       <SidebarHeader className="flex items-center justify-center border-b bg-background px-4 py-4">
         <Link href="/" className="flex items-center justify-center">
           <div className="relative h-[56px] w-auto">
@@ -101,7 +114,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.url}
+                    isActive={isActive(item.url)} 
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
@@ -123,7 +136,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith(item.url)}
+                    isActive={isActive(item.url)} 
                     tooltip={item.title}
                   >
                     <Link href={item.url}>
@@ -185,12 +198,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent
-                align="end"
-                side="top"
-                sideOffset={6}
-                className="w-56"
-              >
+              <DropdownMenuContent align="end" side="top" sideOffset={6} className="w-56">
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings?tab=profile">
                     <User className="mr-2 h-4 w-4" />
