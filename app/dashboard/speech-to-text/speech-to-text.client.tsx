@@ -1,13 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import {
-  Mic,
-  Upload,
-  Copy,
-  Trash2,
-  FileText,
-} from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { Mic, Upload, Copy, Trash2, FileText } from "lucide-react"
 
 declare global {
   interface Window {
@@ -29,30 +23,21 @@ export default function SpeechToTextClient() {
   const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const recognitionRef = useRef<any>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const startedRef = useRef(false) // ⛔ cegah start ganda
 
   /* =====================
-     FILE UPLOAD (TETAP ADA)
+     INIT SPEECH RECOGNITION (ONCE)
   ====================== */
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (!f) return
+  useEffect(() => {
+    if (typeof window === "undefined") return
 
-    setFile(f)
-    setAudioUrl(URL.createObjectURL(f))
-    setError("Upload audio memerlukan API. Gunakan Mic Realtime di bawah.")
-  }
-
-  /* =====================
-     🎙️ MIC REALTIME (ANTI DOUBLE)
-  ====================== */
-  const startMicTranscription = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition
 
     if (!SpeechRecognition) {
-      setError("Browser tidak mendukung Speech Recognition")
+      setError("Browser tidak mendukung Speech Recognition.")
       return
     }
 
@@ -75,25 +60,74 @@ export default function SpeechToTextClient() {
       }
 
       if (final) {
-        setFinalText((prev) => (prev + final).trim())
+        setFinalText((prev) => (prev + final).trim() + " ")
       }
 
       setInterimText(interim)
     }
 
     recognition.onerror = () => {
-      setError("Terjadi error pada speech recognition")
+      setError("Terjadi kesalahan pada speech recognition.")
       setRecording(false)
+      startedRef.current = false
     }
 
-    recognition.start()
+    recognition.onend = () => {
+      setRecording(false)
+      startedRef.current = false
+      setInterimText("")
+    }
+
     recognitionRef.current = recognition
-    setRecording(true)
+  }, [])
+
+  /* =====================
+     FILE UPLOAD (TETAP ADA)
+  ====================== */
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+
+    setFile(f)
+    setAudioUrl(URL.createObjectURL(f))
+    setError("Upload audio memerlukan API server. Gunakan Mic Realtime.")
+  }
+
+  /* =====================
+     🎙️ MIC REALTIME (ANDROID SAFE)
+  ====================== */
+  const startMicTranscription = async () => {
+    if (recording || startedRef.current) return
+
     setError(null)
+
+    try {
+      // 🔑 WAJIB: izin mic HARUS dari klik user
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+
+      startedRef.current = true
+      recognitionRef.current?.start()
+      setRecording(true)
+    } catch (err: any) {
+      console.error(err)
+
+      if (err.name === "NotAllowedError") {
+        setError(
+          "Izin mikrofon ditolak. Aktifkan izin mic di browser lalu coba lagi."
+        )
+      } else {
+        setError(
+          "Tidak bisa mengakses mikrofon. Tutup popup/overlay lain lalu coba lagi."
+        )
+      }
+
+      startedRef.current = false
+    }
   }
 
   const stopMicTranscription = () => {
     recognitionRef.current?.stop()
+    startedRef.current = false
     setRecording(false)
     setInterimText("")
   }
@@ -105,12 +139,14 @@ export default function SpeechToTextClient() {
     const text = finalText.trim()
     if (!text) return
     await navigator.clipboard.writeText(text)
-    alert("Text berhasil disalin")
+    alert("Teks berhasil disalin")
   }
 
   const downloadTxt = () => {
     if (!finalText) return
-    const blob = new Blob([finalText], { type: "text/plain;charset=utf-8" })
+    const blob = new Blob([finalText], {
+      type: "text/plain;charset=utf-8",
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
@@ -185,7 +221,7 @@ export default function SpeechToTextClient() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          💡 Silahkan klik tombol mic untuk mulai berbicara.
+          💡 Klik tombol mic untuk mulai berbicara (izin mic akan muncul).
         </p>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
