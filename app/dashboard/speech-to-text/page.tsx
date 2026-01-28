@@ -4,70 +4,69 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import SpeechToTextClient from "./speech-to-text.client"
 
-type GateState =
-  | "loading"
-  | "allowed"
-  | "login"
-  | "pay_required"
-  | "error"
+type GateState = "checking" | "allowed" | "login" | "pay"
 
-export default function SpeechToTextGate() {
+export default function SpeechToTextPage() {
   const router = useRouter()
-  const [state, setState] = useState<GateState>("loading")
+  const [state, setState] = useState<GateState>("checking")
 
   useEffect(() => {
+    let alive = true
+
     async function checkAccess() {
       try {
         const res = await fetch("/api/speech-to-text/access", {
           cache: "no-store",
         })
 
-        if (!res.ok) throw new Error("Request failed")
-
         const data = await res.json()
+
+        if (!alive) return
 
         if (!data.user) {
           setState("login")
-        } else if (!data.hasAccess) {
-          setState("pay_required")
-        } else {
-          setState("allowed")
+          return
         }
+
+        if (!data.hasAccess) {
+          setState("pay")
+          return
+        }
+
+        setState("allowed")
       } catch (err) {
-        console.error(err)
-        setState("error")
+        console.error("ACCESS CHECK ERROR:", err)
+        setState("login")
       }
     }
 
     checkAccess()
+
+    return () => {
+      alive = false
+    }
   }, [])
 
-  // ⛔ belum login
-  if (state === "login") {
-    router.replace("/login")
-    return null
-  }
-
-  // ⛔ belum bayar
-  if (state === "pay_required") {
-    router.replace("/pricing/speech-to-text?alert=pay_required")
-    return null
-  }
-
-  // ❌ error
-  if (state === "error") {
-    return (
-      <div className="p-6 text-red-600">
-        Gagal memverifikasi akses
-      </div>
-    )
-  }
+  // 🔁 redirect HARUS di effect
+  useEffect(() => {
+    if (state === "login") {
+      router.replace("/login")
+    }
+    if (state === "pay") {
+      router.replace("/pricing/speech-to-text?alert=pay_required")
+    }
+  }, [state, router])
 
   // ⏳ loading
-  if (state === "loading") {
-    return <div className="p-6">Memverifikasi akses...</div>
+  if (state === "checking") {
+    return <div className="p-6">Memverifikasi akses…</div>
   }
 
-  // ✅ akses valid
-  return <SpeechToTextClient />
+  // ✅ akses valid → TAMPILKAN HALAMAN
+  if (state === "allowed") {
+    return <SpeechToTextClient />
+  }
+
+  // redirect sedang berlangsung
+  return null
 }
