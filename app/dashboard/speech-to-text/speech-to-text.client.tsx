@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react"
 import {
   Mic,
-  Upload,
   Copy,
   Trash2,
   FileText,
@@ -37,12 +36,8 @@ export default function SpeechToTextClient() {
   /* =====================
      STATE
   ====================== */
-  const [file, setFile] = useState<File | null>(null)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-
   const [finalText, setFinalText] = useState("")
   const [interimText, setInterimText] = useState("")
-
   const [recording, setRecording] = useState(false)
   const [paused, setPaused] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,41 +46,26 @@ export default function SpeechToTextClient() {
   const [withTimestamp, setWithTimestamp] = useState(false)
   const [autoPunctuate, setAutoPunctuate] = useState(true)
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const recognitionRef = useRef<any>(null)
+  const finalIndexRef = useRef(0)
+  const manualStopRef = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   /* =====================
-     FILE UPLOAD (TETAP)
-  ====================== */
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setFile(f)
-    setAudioUrl(URL.createObjectURL(f))
-    setError("Upload audio memerlukan API. Gunakan Mic Realtime.")
-  }
-
-  /* =====================
-     AUTO PUNCTUATION (SIMPLE)
+     AUTO PUNCTUATION
   ====================== */
   const applyPunctuation = (text: string) => {
     if (!autoPunctuate) return text
 
     let t = text.trim()
-    if (!t.endsWith(".") && !t.endsWith("?") && !t.endsWith("!")) {
-      t += "."
-    }
-    t = t.replace(/\s+/g, " ")
-    return t
+    if (!/[.!?]$/.test(t)) t += "."
+    return t + " "
   }
 
   /* =====================
      INIT RECOGNITION
   ====================== */
-  const getRecognition = () => {
-    if (recognitionRef.current) return recognitionRef.current
-
+  const initRecognition = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SR) {
       setError("Browser tidak mendukung Speech Recognition")
@@ -99,22 +79,26 @@ export default function SpeechToTextClient() {
 
     recognition.onresult = (event: any) => {
       let interim = ""
-      let final = ""
+      let finalChunk = ""
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
+      for (let i = finalIndexRef.current; i < event.results.length; i++) {
+        const res = event.results[i]
+        const transcript = res[0].transcript.trim()
+
+        if (res.isFinal) {
           const stamp = withTimestamp
             ? `[${new Date().toLocaleTimeString()}] `
             : ""
-          final += stamp + applyPunctuation(t) + " "
+
+          finalChunk += stamp + applyPunctuation(transcript)
+          finalIndexRef.current++
         } else {
-          interim += t
+          interim = transcript
         }
       }
 
-      if (final) {
-        setFinalText((prev) => prev + final)
+      if (finalChunk) {
+        setFinalText((prev) => prev + finalChunk)
       }
 
       setInterimText(interim)
@@ -123,11 +107,15 @@ export default function SpeechToTextClient() {
     recognition.onerror = () => {
       setError("Terjadi error pada speech recognition")
       setRecording(false)
-      setPaused(false)
     }
 
     recognition.onend = () => {
-      if (!paused) setRecording(false)
+      // 🔥 AUTO RESTART kalau bukan stop manual
+      if (!manualStopRef.current && !paused) {
+        recognition.start()
+      } else {
+        setRecording(false)
+      }
     }
 
     recognitionRef.current = recognition
@@ -137,43 +125,43 @@ export default function SpeechToTextClient() {
   /* =====================
      MIC CONTROL
   ====================== */
-  const startMicTranscription = async () => {
+  const startMic = async () => {
     setError(null)
+    manualStopRef.current = false
+    finalIndexRef.current = 0
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach((t) => t.stop())
-
-      const recognition = getRecognition()
-      if (!recognition) return
-
-      recognition.lang = language
-      recognition.start()
-
-      setRecording(true)
-      setPaused(false)
+      await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
       setError(
-        "Izin mikrofon diblokir browser. Aktifkan mic melalui ikon 🔒 di address bar."
+        "Izin mikrofon diblokir browser. Aktifkan mic via ikon 🔒 di address bar."
       )
+      return
     }
+
+    const recognition = initRecognition()
+    recognition?.start()
+    setRecording(true)
+    setPaused(false)
   }
 
-  const stopMicTranscription = () => {
+  const pauseMic = () => {
+    setPaused(true)
+    recognitionRef.current?.stop()
+  }
+
+  const resumeMic = () => {
+    setPaused(false)
+    recognitionRef.current?.start()
+    setRecording(true)
+  }
+
+  const stopMic = () => {
+    manualStopRef.current = true
     recognitionRef.current?.stop()
     setRecording(false)
     setPaused(false)
     setInterimText("")
-  }
-
-  const pauseMic = () => {
-    recognitionRef.current?.stop()
-    setPaused(true)
-    setRecording(false)
-  }
-
-  const resumeMic = () => {
-    startMicTranscription()
   }
 
   /* =====================
@@ -194,11 +182,11 @@ export default function SpeechToTextClient() {
     })
 
     localStorage.setItem("stt_history", JSON.stringify(history.slice(0, 50)))
-    alert("Hasil berhasil disimpan ke dashboard")
+    alert("Hasil disimpan ke dashboard")
   }
 
   /* =====================
-     EXPORT PDF (PRINT)
+     EXPORT PDF
   ====================== */
   const exportPDF = () => {
     const win = window.open("", "_blank")
@@ -219,36 +207,9 @@ export default function SpeechToTextClient() {
         </body>
       </html>
     `)
+
     win.document.close()
     win.print()
-  }
-
-  /* =====================
-     UTILITIES
-  ====================== */
-  const copyText = async () => {
-    if (!finalText) return
-    await navigator.clipboard.writeText(finalText)
-    alert("Text berhasil disalin")
-  }
-
-  const downloadTxt = () => {
-    const blob = new Blob([finalText], { type: "text/plain;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "speech-to-text.txt"
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const resetAll = () => {
-    stopMicTranscription()
-    setFinalText("")
-    setInterimText("")
-    setFile(null)
-    setAudioUrl(null)
-    setError(null)
   }
 
   /* =====================
@@ -262,31 +223,29 @@ export default function SpeechToTextClient() {
   }, [finalText, interimText])
 
   const wordCount = finalText.trim().split(/\s+/).filter(Boolean).length
-  const charCount = finalText.length
 
   /* =====================
      UI
   ====================== */
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <h1 className="flex items-center gap-2 text-3xl font-bold">
-        <Mic className="h-7 w-7 text-orange-500" />
-        Speech to Text (PRO)
+    <div className="mx-auto max-w-5xl space-y-6">
+      <h1 className="text-3xl font-bold flex items-center gap-2">
+        <Mic className="text-orange-500" /> Speech to Text (PRO)
       </h1>
 
       {/* SETTINGS */}
-      <div className="flex flex-wrap gap-3 items-center text-sm">
-        <Globe className="h-4 w-4" />
+      <div className="flex gap-3 items-center text-sm flex-wrap">
+        <Globe />
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as any)}
-          className="border rounded px-2 py-1"
+          className="border px-2 py-1 rounded"
         >
           <option value="id-ID">Indonesia</option>
           <option value="en-US">English</option>
         </select>
 
-        <label className="flex items-center gap-2">
+        <label className="flex gap-1">
           <input
             type="checkbox"
             checked={withTimestamp}
@@ -295,7 +254,7 @@ export default function SpeechToTextClient() {
           Timestamp
         </label>
 
-        <label className="flex items-center gap-2">
+        <label className="flex gap-1">
           <input
             type="checkbox"
             checked={autoPunctuate}
@@ -305,85 +264,61 @@ export default function SpeechToTextClient() {
         </label>
 
         <span className="ml-auto text-muted-foreground">
-          {wordCount} words · {charCount} chars
+          {wordCount} words
         </span>
       </div>
 
-      {/* MIC CONTROLS */}
+      {/* MIC */}
       <div className="flex gap-2">
         {!recording && !paused && (
-          <button
-            onClick={startMicTranscription}
-            className="bg-black text-white px-4 py-2 rounded-md"
-          >
+          <button onClick={startMic} className="bg-black text-white px-4 py-2 rounded">
             🎙️ Mulai
           </button>
         )}
-
         {recording && (
-          <button
-            onClick={pauseMic}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-md"
-          >
-            <Pause className="inline h-4 w-4" /> Pause
+          <button onClick={pauseMic} className="bg-yellow-500 text-white px-4 py-2 rounded">
+            <Pause className="w-4 h-4 inline" /> Pause
           </button>
         )}
-
         {paused && (
-          <button
-            onClick={resumeMic}
-            className="bg-green-600 text-white px-4 py-2 rounded-md"
-          >
-            <Play className="inline h-4 w-4" /> Resume
+          <button onClick={resumeMic} className="bg-green-600 text-white px-4 py-2 rounded">
+            <Play className="w-4 h-4 inline" /> Resume
           </button>
         )}
-
-        <button
-          onClick={stopMicTranscription}
-          className="bg-red-600 text-white px-4 py-2 rounded-md"
-        >
+        <button onClick={stopMic} className="bg-red-600 text-white px-4 py-2 rounded">
           ⏹️ Stop
         </button>
       </div>
 
-      {error && <p className="text-red-500">{error}</p>}
-
-      {/* WAVEFORM (VISUAL) */}
       {recording && (
         <div className="flex items-center gap-2 text-orange-500">
-          <Waves className="animate-pulse" />
-          Recording audio...
+          <Waves className="animate-pulse" /> Recording...
         </div>
       )}
 
-      {/* EDITOR */}
+      {error && <p className="text-red-500">{error}</p>}
+
+      {/* TEXT */}
       <textarea
         ref={textareaRef}
-        value={finalText + (recording ? interimText : "")}
+        value={finalText + (recording ? " " + interimText : "")}
         readOnly
-        className="min-h-[260px] w-full rounded-md border p-3"
-        placeholder="Hasil transkripsi..."
+        className="w-full min-h-[260px] border rounded p-3"
       />
 
       {/* ACTIONS */}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={copyText} className="border px-3 py-2 rounded-md">
-          <Copy className="h-4 w-4 inline" /> Copy
+      <div className="flex gap-2 flex-wrap">
+        <button onClick={() => navigator.clipboard.writeText(finalText)} className="border px-3 py-2 rounded">
+          <Copy className="w-4 h-4 inline" /> Copy
         </button>
-        <button onClick={downloadTxt} className="border px-3 py-2 rounded-md">
-          <FileText className="h-4 w-4 inline" /> TXT
+        <button onClick={exportPDF} className="border px-3 py-2 rounded">
+          <FileDown className="w-4 h-4 inline" /> PDF
         </button>
-        <button onClick={exportPDF} className="border px-3 py-2 rounded-md">
-          <FileDown className="h-4 w-4 inline" /> PDF
+        <button onClick={saveHistory} className="border px-3 py-2 rounded">
+          <Save className="w-4 h-4 inline" /> Save
         </button>
-        <button onClick={saveHistory} className="border px-3 py-2 rounded-md">
-          <Save className="h-4 w-4 inline" /> Save
-        </button>
-        <button
-          onClick={resetAll}
-          className="ml-auto border px-3 py-2 rounded-md text-red-500"
-        >
-          <Trash2 className="h-4 w-4 inline" /> Reset
+        <button onClick={stopMic} className="ml-auto border px-3 py-2 rounded text-red-500">
+          <Trash2 className="w-4 h-4 inline" /> Reset
         </button>
       </div>
     </div>
