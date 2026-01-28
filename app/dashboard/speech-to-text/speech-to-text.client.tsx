@@ -31,7 +31,6 @@ export default function SpeechToTextClient() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const recognitionRef = useRef<any>(null)
-  const startedRef = useRef(false) // ✅ FIX: cegah double start
 
   /* =====================
      FILE UPLOAD (TETAP ADA)
@@ -46,100 +45,61 @@ export default function SpeechToTextClient() {
   }
 
   /* =====================
-     🎙️ MIC REALTIME (FIX IZIN MIC)
+     🎙️ MIC REALTIME (ANTI DOUBLE)
   ====================== */
-  const startMicTranscription = async () => {
-    if (recording || startedRef.current) return // ✅ FIX
+  const startMicTranscription = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition
 
-    setError(null)
-
-    try {
-      // ✅ FIX 1: MINTA IZIN MIC SECARA EKSPLISIT
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-      // ✅ FIX 2: STOP TRACK AGAR TIDAK BENTROK
-      stream.getTracks().forEach((t) => t.stop())
-
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition
-
-      if (!SpeechRecognition) {
-        setError("Browser tidak mendukung Speech Recognition")
-        return
-      }
-
-      // ✅ FIX 3: GUNAKAN INSTANCE TUNGGAL
-      if (!recognitionRef.current) {
-        const recognition = new SpeechRecognition()
-        recognition.lang = "id-ID"
-        recognition.continuous = true
-        recognition.interimResults = true
-
-        recognition.onresult = (event: any) => {
-          let interim = ""
-          let final = ""
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript
-            if (event.results[i].isFinal) {
-              final += transcript + " "
-            } else {
-              interim += transcript
-            }
-          }
-
-          if (final) {
-            setFinalText((prev) => (prev + final).trim() + " ")
-          }
-
-          setInterimText(interim)
-        }
-
-        recognition.onerror = () => {
-          setError("Terjadi error pada speech recognition")
-          setRecording(false)
-          startedRef.current = false
-        }
-
-        recognition.onend = () => {
-          setRecording(false)
-          startedRef.current = false
-          setInterimText("")
-        }
-
-        recognitionRef.current = recognition
-      }
-
-      // ✅ FIX 4: START SETELAH IZIN AMAN
-      startedRef.current = true
-      recognitionRef.current.start()
-      setRecording(true)
-    } catch (err: any) {
-      console.error(err)
-
-      if (err.name === "NotAllowedError") {
-        setError(
-          "Izin mikrofon diblokir browser. Tap ikon 🔒 di address bar lalu set Microphone ke Allow."
-        )
-      } else {
-        setError(
-          "Tidak bisa mengakses mikrofon. Tutup popup/overlay lain lalu coba lagi."
-        )
-      }
-
-      startedRef.current = false
+    if (!SpeechRecognition) {
+      setError("Browser tidak mendukung Speech Recognition")
+      return
     }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = "id-ID"
+    recognition.continuous = true
+    recognition.interimResults = true
+
+    recognition.onresult = (event: any) => {
+      let interim = ""
+      let final = ""
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          final += transcript + " "
+        } else {
+          interim += transcript
+        }
+      }
+
+      if (final) {
+        setFinalText((prev) => (prev + final).trim())
+      }
+
+      setInterimText(interim)
+    }
+
+    recognition.onerror = () => {
+      setError("Terjadi error pada speech recognition")
+      setRecording(false)
+    }
+
+    recognition.start()
+    recognitionRef.current = recognition
+    setRecording(true)
+    setError(null)
   }
 
   const stopMicTranscription = () => {
     recognitionRef.current?.stop()
     setRecording(false)
     setInterimText("")
-    startedRef.current = false
   }
 
   /* =====================
-     UTILITIES (TETAP)
+     UTILITIES
   ====================== */
   const copyText = async () => {
     const text = finalText.trim()
@@ -169,7 +129,7 @@ export default function SpeechToTextClient() {
   }
 
   /* =====================
-     UI (TIDAK DIUBAH)
+     UI
   ====================== */
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -225,7 +185,7 @@ export default function SpeechToTextClient() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          💡 Klik tombol mic, izin mikrofon akan muncul otomatis.
+          💡 Silahkan klik tombol mic untuk mulai berbicara.
         </p>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
