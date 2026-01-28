@@ -4,24 +4,23 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import SpeechToTextClient from "./speech-to-text.client"
 
-type GateState = "checking" | "allowed" | "login" | "pay_required"
+type State = "checking" | "allowed" | "login" | "pay"
 
 export default function SpeechToTextGate() {
   const router = useRouter()
-  const [state, setState] = useState<GateState>("checking")
+  const [state, setState] = useState<State>("checking")
 
   useEffect(() => {
-    let mounted = true
+    let active = true
 
-    async function checkAccess() {
+    async function run() {
       try {
         const res = await fetch("/api/speech-to-text/access", {
           cache: "no-store",
         })
-
         const data = await res.json()
 
-        if (!mounted) return
+        if (!active) return
 
         if (!data.user) {
           setState("login")
@@ -29,41 +28,30 @@ export default function SpeechToTextGate() {
         }
 
         if (!data.hasAccess) {
-          setState("pay_required")
+          setState("pay")
           return
         }
 
-        // ✅ AKSES VALID
         setState("allowed")
-      } catch (err) {
-        console.error("ACCESS CHECK FAILED:", err)
+      } catch {
         setState("login")
       }
     }
 
-    checkAccess()
-
+    run()
     return () => {
-      mounted = false
+      active = false
     }
   }, [])
 
-  /* ===============================
-   * REDIRECT EFFECT (AMAN)
-   * =============================== */
   useEffect(() => {
     if (state === "login") {
       router.replace("/login")
     }
-
-    if (state === "pay_required") {
+    if (state === "pay") {
       router.replace("/pricing/speech-to-text?alert=pay_required")
     }
   }, [state, router])
-
-  /* ===============================
-   * RENDER
-   * =============================== */
 
   if (state === "checking") {
     return <div className="p-6">Memverifikasi akses...</div>
@@ -73,6 +61,5 @@ export default function SpeechToTextGate() {
     return <SpeechToTextClient />
   }
 
-  // redirect sedang berjalan
   return null
 }
