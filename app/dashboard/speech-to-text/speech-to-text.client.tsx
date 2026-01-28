@@ -1,7 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Mic, Copy, Trash2, FileText } from "lucide-react"
+import { useState, useRef } from "react"
+import {
+  Mic,
+  Upload,
+  Copy,
+  Trash2,
+  FileText,
+} from "lucide-react"
 
 declare global {
   interface Window {
@@ -10,121 +16,141 @@ declare global {
   }
 }
 
-type PermissionState = "unknown" | "granted" | "denied"
-
 export default function SpeechToTextClient() {
-  const recognitionRef = useRef<any>(null)
-  const startedRef = useRef(false)
+  /* =====================
+     STATE
+  ====================== */
+  const [file, setFile] = useState<File | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
   const [finalText, setFinalText] = useState("")
   const [interimText, setInterimText] = useState("")
-  const [recording, setRecording] = useState(false)
 
-  const [permission, setPermission] = useState<PermissionState>("unknown")
+  const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  /* ============================
-     INIT SPEECH RECOGNITION
-  ============================ */
-  useEffect(() => {
-    const SR =
-      window.SpeechRecognition || window.webkitSpeechRecognition
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const startedRef = useRef(false) // ✅ FIX: cegah double start
 
-    if (!SR) {
-      setError("Browser tidak mendukung Speech Recognition.")
-      return
-    }
+  /* =====================
+     FILE UPLOAD (TETAP ADA)
+  ====================== */
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
 
-    const recognition = new SR()
-    recognition.lang = "id-ID"
-    recognition.continuous = true
-    recognition.interimResults = true
-
-    recognition.onresult = (event: any) => {
-      let interim = ""
-      let final = ""
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript
-        if (event.results[i].isFinal) final += t + " "
-        else interim += t
-      }
-
-      if (final) setFinalText((p) => p + final)
-      setInterimText(interim)
-    }
-
-    recognition.onerror = () => {
-      setRecording(false)
-      startedRef.current = false
-    }
-
-    recognition.onend = () => {
-      setRecording(false)
-      startedRef.current = false
-      setInterimText("")
-    }
-
-    recognitionRef.current = recognition
-  }, [])
-
-  /* ============================
-     CHECK PERMISSION (SAFE)
-  ============================ */
-  async function checkPermission() {
-    try {
-      const res = await navigator.mediaDevices.getUserMedia({ audio: true })
-      res.getTracks().forEach((t) => t.stop())
-      setPermission("granted")
-      return true
-    } catch (err: any) {
-      setPermission("denied")
-      return false
-    }
+    setFile(f)
+    setAudioUrl(URL.createObjectURL(f))
+    setError("Upload audio memerlukan API. Gunakan Mic Realtime di bawah.")
   }
 
-  /* ============================
-     START MIC (USER CLICK ONLY)
-  ============================ */
-  async function startMic() {
-    if (recording || startedRef.current) return
+  /* =====================
+     🎙️ MIC REALTIME (FIX IZIN MIC)
+  ====================== */
+  const startMicTranscription = async () => {
+    if (recording || startedRef.current) return // ✅ FIX
+
     setError(null)
 
-    const ok = await checkPermission()
-
-    if (!ok) {
-      setError(
-        "Izin mikrofon diblokir oleh browser.\n\n" +
-        "Solusi:\n" +
-        "• Tap ikon 🔒 di address bar\n" +
-        "• Pilih Microphone → Allow\n" +
-        "• Refresh halaman\n"
-      )
-      return
-    }
-
     try {
+      // ✅ FIX 1: MINTA IZIN MIC SECARA EKSPLISIT
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+
+      // ✅ FIX 2: STOP TRACK AGAR TIDAK BENTROK
+      stream.getTracks().forEach((t) => t.stop())
+
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition
+
+      if (!SpeechRecognition) {
+        setError("Browser tidak mendukung Speech Recognition")
+        return
+      }
+
+      // ✅ FIX 3: GUNAKAN INSTANCE TUNGGAL
+      if (!recognitionRef.current) {
+        const recognition = new SpeechRecognition()
+        recognition.lang = "id-ID"
+        recognition.continuous = true
+        recognition.interimResults = true
+
+        recognition.onresult = (event: any) => {
+          let interim = ""
+          let final = ""
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript
+            if (event.results[i].isFinal) {
+              final += transcript + " "
+            } else {
+              interim += transcript
+            }
+          }
+
+          if (final) {
+            setFinalText((prev) => (prev + final).trim() + " ")
+          }
+
+          setInterimText(interim)
+        }
+
+        recognition.onerror = () => {
+          setError("Terjadi error pada speech recognition")
+          setRecording(false)
+          startedRef.current = false
+        }
+
+        recognition.onend = () => {
+          setRecording(false)
+          startedRef.current = false
+          setInterimText("")
+        }
+
+        recognitionRef.current = recognition
+      }
+
+      // ✅ FIX 4: START SETELAH IZIN AMAN
       startedRef.current = true
       recognitionRef.current.start()
       setRecording(true)
-    } catch {
+    } catch (err: any) {
+      console.error(err)
+
+      if (err.name === "NotAllowedError") {
+        setError(
+          "Izin mikrofon diblokir browser. Tap ikon 🔒 di address bar lalu set Microphone ke Allow."
+        )
+      } else {
+        setError(
+          "Tidak bisa mengakses mikrofon. Tutup popup/overlay lain lalu coba lagi."
+        )
+      }
+
       startedRef.current = false
     }
   }
 
-  function stopMic() {
+  const stopMicTranscription = () => {
     recognitionRef.current?.stop()
-    startedRef.current = false
     setRecording(false)
     setInterimText("")
+    startedRef.current = false
   }
 
-  /* ============================
-     UTIL
-  ============================ */
-  function downloadTxt() {
+  /* =====================
+     UTILITIES (TETAP)
+  ====================== */
+  const copyText = async () => {
+    const text = finalText.trim()
+    if (!text) return
+    await navigator.clipboard.writeText(text)
+    alert("Text berhasil disalin")
+  }
+
+  const downloadTxt = () => {
     if (!finalText) return
-    const blob = new Blob([finalText], { type: "text/plain" })
+    const blob = new Blob([finalText], { type: "text/plain;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
@@ -133,72 +159,113 @@ export default function SpeechToTextClient() {
     URL.revokeObjectURL(url)
   }
 
-  function copyText() {
-    navigator.clipboard.writeText(finalText)
-    alert("Teks disalin")
-  }
-
-  function resetAll() {
-    stopMic()
+  const resetAll = () => {
+    stopMicTranscription()
     setFinalText("")
     setInterimText("")
+    setFile(null)
+    setAudioUrl(null)
     setError(null)
   }
 
-  /* ============================
-     UI
-  ============================ */
+  /* =====================
+     UI (TIDAK DIUBAH)
+  ====================== */
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold flex gap-2 items-center">
-        <Mic className="text-orange-500" />
-        Speech to Text (PRO)
-      </h1>
-
-      <div className="flex gap-3">
-        {!recording ? (
-          <button
-            onClick={startMic}
-            className="bg-black text-white px-4 py-2 rounded-md"
-          >
-            🎙️ Mulai Bicara
-          </button>
-        ) : (
-          <button
-            onClick={stopMic}
-            className="bg-red-600 text-white px-4 py-2 rounded-md"
-          >
-            ⏹️ Hentikan
-          </button>
-        )}
-
-        {finalText && (
-          <button onClick={downloadTxt} className="border px-3 rounded-md">
-            <FileText className="inline h-4 w-4" /> Download
-          </button>
-        )}
-
-        <button onClick={copyText} className="border px-3 rounded-md">
-          <Copy className="inline h-4 w-4" /> Copy
-        </button>
-
-        <button onClick={resetAll} className="border px-3 rounded-md text-red-500">
-          <Trash2 className="inline h-4 w-4" /> Reset
-        </button>
+    <div className="mx-auto max-w-5xl space-y-8">
+      {/* HEADER */}
+      <div>
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
+          <Mic className="h-7 w-7 text-orange-500" />
+          Speech to Text (PRO)
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          Klik tombol mic, lalu <b>mulai berbicara dengan jelas</b>.
+          Teks akan muncul otomatis saat kamu berbicara.
+        </p>
       </div>
 
-      {error && (
-        <pre className="whitespace-pre-wrap rounded bg-red-100 p-3 text-red-700 text-sm">
-          {error}
-        </pre>
-      )}
+      {/* UPLOAD */}
+      <div className="rounded-xl border p-6 space-y-4">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 text-center">
+          <Upload className="h-8 w-8 text-muted-foreground" />
+          <p className="font-medium">Upload Audio File</p>
+          <p className="text-xs text-muted-foreground">
+            MP3, WAV, M4A (perlu API)
+          </p>
+          <input
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={onFileChange}
+          />
+        </label>
 
-      <textarea
-        readOnly
-        value={finalText + (recording ? interimText : "")}
-        className="w-full min-h-[220px] border rounded-md p-3"
-        placeholder="Hasil transkripsi muncul di sini…"
-      />
+        {audioUrl && (
+          <audio ref={audioRef} controls src={audioUrl} className="w-full" />
+        )}
+
+        {/* MIC BUTTON */}
+        <div className="flex gap-2">
+          {!recording ? (
+            <button
+              onClick={startMicTranscription}
+              className="rounded-md bg-black px-4 py-2 text-white"
+            >
+              🎙️ Mulai Bicara
+            </button>
+          ) : (
+            <button
+              onClick={stopMicTranscription}
+              className="rounded-md bg-red-600 px-4 py-2 text-white"
+            >
+              ⏹️ Selesai Bicara
+            </button>
+          )}
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          💡 Klik tombol mic, izin mikrofon akan muncul otomatis.
+        </p>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+      </div>
+
+      {/* EDITOR */}
+      <div className="rounded-xl border p-6 space-y-4">
+        <textarea
+          value={finalText + (recording ? " " + interimText : "")}
+          readOnly
+          className="min-h-[260px] w-full rounded-md border p-3"
+          placeholder="Hasil transkripsi akan muncul di sini..."
+        />
+
+        <div className="flex gap-2">
+          <button
+            onClick={copyText}
+            className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          >
+            <Copy className="h-4 w-4" />
+            Copy
+          </button>
+
+          <button
+            onClick={downloadTxt}
+            className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          >
+            <FileText className="h-4 w-4" />
+            Download TXT
+          </button>
+
+          <button
+            onClick={resetAll}
+            className="ml-auto flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-red-500"
+          >
+            <Trash2 className="h-4 w-4" />
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
