@@ -1,15 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import SpeechToTextClient from "./speech-to-text.client"
 
 type GateState = "checking" | "allowed" | "login" | "pay"
 
 export default function SpeechToTextPage() {
   const router = useRouter()
-  const [state, setState] = useState<GateState>("checking")
+  const pathname = usePathname()
 
+  const [state, setState] = useState<GateState>("checking")
+  const redirected = useRef(false) // ⛔ cegah redirect berulang
+
+  /* ============================
+   * 1️⃣ CEK AKSES (API)
+   * ============================ */
   useEffect(() => {
     let alive = true
 
@@ -23,12 +29,12 @@ export default function SpeechToTextPage() {
 
         if (!alive) return
 
-        if (!data.user) {
+        if (!data?.user) {
           setState("login")
           return
         }
 
-        if (!data.hasAccess) {
+        if (!data?.hasAccess) {
           setState("pay")
           return
         }
@@ -47,22 +53,44 @@ export default function SpeechToTextPage() {
     }
   }, [])
 
-  // 🔁 redirect HARUS di effect
+  /* ============================
+   * 2️⃣ REDIRECT (AMAN & TERKONTROL)
+   * ============================ */
   useEffect(() => {
-    if (state === "login") {
-      router.replace("/login")
-    }
-    if (state === "pay") {
-      router.replace("/pricing/speech-to-text?alert=pay_required")
-    }
-  }, [state, router])
+    if (redirected.current) return
 
-  // ⏳ loading
+    // belum login
+    if (state === "login" && pathname !== "/login") {
+      redirected.current = true
+      router.replace("/login")
+      return
+    }
+
+    // belum bayar
+    if (
+      state === "pay" &&
+      !pathname.startsWith("/pricing/speech-to-text")
+    ) {
+      redirected.current = true
+      router.replace("/pricing/speech-to-text?alert=pay_required")
+      return
+    }
+  }, [state, pathname, router])
+
+  /* ============================
+   * 3️⃣ RENDER
+   * ============================ */
+
+  // loading
   if (state === "checking") {
-    return <div className="p-6">Memverifikasi akses…</div>
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        Memverifikasi akses…
+      </div>
+    )
   }
 
-  // ✅ akses valid → TAMPILKAN HALAMAN
+  // ✅ AKSES VALID → HALAMAN STT MUNCUL
   if (state === "allowed") {
     return <SpeechToTextClient />
   }
